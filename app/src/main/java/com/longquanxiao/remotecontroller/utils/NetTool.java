@@ -1,6 +1,9 @@
 package com.longquanxiao.remotecontroller.utils;
 
+import android.content.Context;
 import android.net.InetAddresses;
+import android.net.wifi.WifiManager;
+import android.view.View;
 //import org.apache.http.conn.util.InetAddressUtils;
 
 import java.net.InetAddress;
@@ -30,13 +33,14 @@ public class NetTool {
             while (address.hasMoreElements()){
                 InetAddress ip = address.nextElement();
                 System.out.printf("ip = %s\n", ip.getHostAddress());
-                if (!ip.isLoopbackAddress()){
-                    System.out.printf("ip = %s\n", ip.getHostAddress());
-                }
+//                if (!ip.isLoopbackAddress()){
+//                    System.out.printf("ip = %s\n", ip.getHostAddress());
+//                }
             }
         }
         return ipAddress;
     }
+
 
 
 }

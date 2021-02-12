@@ -1,5 +1,9 @@
 package com.longquanxiao.remotecontroller;
 
+import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.JsonReader;
 import android.view.LayoutInflater;
@@ -17,7 +21,12 @@ import com.alibaba.fastjson.JSON;
 import com.longquanxiao.remotecontroller.utils.NetTool;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -52,8 +61,48 @@ public class FirstFragment extends Fragment {
         updateText = true;
         this.statusViewText = text;
     }
+    public String getStatusViewText() {
+        return this.statusViewText;
+    }
+
+    public String getLocal4GAddress() {
+        String ip = "";
+        try {
+            ArrayList<NetworkInterface> networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface n :
+                    networkInterfaces) {
+                ArrayList<InetAddress> inetAddress = Collections.list(n.getInetAddresses());
+                for (InetAddress address :
+                        inetAddress) {
+                    if (!address.isLoopbackAddress() && !address.isLinkLocalAddress()) {
+                        ip = address.getHostAddress();
+                        return ip;
+                    }
+                }
+            }
+        }catch (Exception e){
+            setStatusViewText(e.getMessage());
+        }
+        return ip;
+    }
+    public String geLocalWifiAddress(View view) {
+        String ipv4 = "";
+        WifiManager wifiManager = (WifiManager)view.getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        // 检查并开启wifi
+        if (!wifiManager.isWifiEnabled()) {
+            wifiManager.setWifiEnabled(true);
+        }
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+        int ipAddress = wifiInfo.getIpAddress();
+        ipv4 = (ipAddress & 0xFF) + "." + ((ipAddress >> 8) & 0xFF) + "." + ((ipAddress >> 16) & 0xFF) + "." + ((ipAddress >> 24) & 0xFF);
+        return ipv4;
+    }
+
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        view.setBackgroundResource(R.drawable.bg);
+        view.getBackground().setAlpha(180);
+
         // 初始化页面数据,当前电脑的状态,
         statusView = view.findViewById(R.id.statusText);
         EditText ipEditText = ((EditText)view.findViewById(R.id.ipInputText));
@@ -149,6 +198,10 @@ public class FirstFragment extends Fragment {
             }
         });
 
+        String ip = this.geLocalWifiAddress(view);
+        ((EditText)view.findViewById(R.id.localIPEditText)).setText(ip);
+        setStatusViewText("WIFI连接IP:"+ip);
+        System.out.println(getStatusViewText());
         cancelShutdownBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
