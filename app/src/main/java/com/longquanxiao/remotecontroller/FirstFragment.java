@@ -69,11 +69,9 @@ public class FirstFragment extends Fragment {
         String ip = "";
         try {
             ArrayList<NetworkInterface> networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (NetworkInterface n :
-                    networkInterfaces) {
+            for (NetworkInterface n : networkInterfaces) {
                 ArrayList<InetAddress> inetAddress = Collections.list(n.getInetAddresses());
-                for (InetAddress address :
-                        inetAddress) {
+                for (InetAddress address : inetAddress) {
                     if (!address.isLoopbackAddress() && !address.isLinkLocalAddress()) {
                         ip = address.getHostAddress();
                         return ip;
@@ -199,9 +197,11 @@ public class FirstFragment extends Fragment {
         });
 
         String ip = this.geLocalWifiAddress(view);
-        ((EditText)view.findViewById(R.id.localIPEditText)).setText(ip);
         setStatusViewText("WIFI连接IP:"+ip);
-        System.out.println(getStatusViewText());
+        if ("0.0.0.0".equals(ip)){
+            ip = this.getLocal4GAddress();
+        }
+        ((EditText)view.findViewById(R.id.localIPEditText)).setText(ip);
         cancelShutdownBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

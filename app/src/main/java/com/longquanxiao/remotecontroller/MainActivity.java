@@ -1,32 +1,34 @@
 package com.longquanxiao.remotecontroller;
 
-import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.ColorFilter;
-import android.graphics.drawable.Drawable;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
-import com.longquanxiao.remotecontroller.utils.NetTool;
+import com.longquanxiao.remotecontroller.core.RCTLCore;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.res.TypedArrayUtils;
 
 import android.view.View;
 
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.io.ByteArrayInputStream;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                RCTLCore rctlCore = RCTLCore.getInstance();
+                rctlCore.sendData("HelloWorld".getBytes());
+            }
+        }).start();
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
