@@ -6,6 +6,7 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.JsonReader;
+import android.util.TimeUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.alibaba.fastjson.JSON;
+import com.longquanxiao.remotecontroller.core.RCTLCore;
 import com.longquanxiao.remotecontroller.utils.NetTool;
 
 import java.io.IOException;
@@ -27,6 +29,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Timer;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -121,6 +124,8 @@ public class FirstFragment extends Fragment {
                             e.printStackTrace();
                         }
                         updateText = false;
+                    }else{
+                        statusView.setText(System.currentTimeMillis() + ":" + new String(RCTLCore.getInstance().readData()));
                     }
                 }
             }
@@ -172,6 +177,7 @@ public class FirstFragment extends Fragment {
                 String url = "http://"+ ip + ":9999/cmd?id=3";
                 System.out.println("请求ip "+url);
                 setStatusViewText("请求ip "+url);
+                RCTLCore.getInstance().sendData((getStatusViewText().getBytes()));
                 Request request = new Request.Builder().url(url).build();
                 Call call = client.newCall(request);
                 call.enqueue(new Callback() {

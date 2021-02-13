@@ -10,18 +10,21 @@ import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static android.content.ContentValues.TAG;
 
 
 class RCTLConnetion {
+    private RCTLConnetion instance;
     private Socket socket;
     private boolean active;
     private Thread readThread = null;
     private OutputStream outputStream = null;
     private InputStream inputStream = null;
     private Thread writeThread = null;
+    private Queue<byte[]> readQueue = null;
+    private Queue<byte[]> writeQueue = null;
 
     public RCTLConnetion(){}
     public RCTLConnetion(Socket socket) throws Exception {
@@ -29,6 +32,7 @@ class RCTLConnetion {
         this.active = true;
         this.outputStream = this.socket.getOutputStream();
         this.inputStream = this.socket.getInputStream();
+        this.readQueue = new LinkedBlockingQueue<>(125);
         this.readThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -36,33 +40,78 @@ class RCTLConnetion {
                 while(active) {
                     try{
                          int ret = inputStream.read(buffer);
-
-                    }catch (IOException e){
+                         if (-1 == ret) {
+                         }else if (ret > 0) {
+//                             System.out.println("thread read data size = " + ret);
+//                             System.out.println("thread read data "+ new String(buffer,0, ret));
+                             byte[] e1 = new byte[ret];
+                             for (int i = 0; i < ret; i++) {
+                                 e1[i] = buffer[i];
+                             }
+                             try{
+                                 readQueue.add(e1);
+                             }catch (IllegalStateException e){
+                                 readQueue.poll();
+                                 e.printStackTrace();
+                             }
+                         }
+                        Thread.sleep(200);
+                    }catch (IOException | InterruptedException e){
+                        e.printStackTrace();
+                        active = false;
+                    }
+                }
+                RCTLCore.getInstance().destroyRCTLConnection(instance);
+            }
+        });
+        this.readThread.start();
+        this.writeQueue = new LinkedBlockingQueue<>(125);
+        this.writeThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(active) {
+                    try {
+                        byte[] sendbuffer = writeQueue.poll();
+                        if (null == sendbuffer || sendbuffer.length <= 0) {
+                            sendbuffer = "CLIENT SAY HELLO WORLD".getBytes();
+                        }
+                        outputStream.write(sendbuffer);
+//                        System.out.println("thread write data size "+sendbuffer.length);
+                        Thread.sleep(500);
+                    }catch (Exception e){
                         e.printStackTrace();
                         active = false;
                     }
                 }
             }
         });
-        this.readThread.start();
-
-        this.writeThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while(active) {
-                    try {
-
-                        Thread.sleep(200);
-                    }catch (Exception e){
-                        active = false;
-                    }
-                }
-            }
-        });
         this.writeThread.start();
-
+        this.instance = this;
     }
 
+    public byte[] readDate() {
+        if (null != this.readQueue){
+            return this.readQueue.poll();
+        }
+        return null;
+    }
+
+    public boolean writeData(byte[] data) {
+        if (null != this.writeQueue){
+            return this.writeQueue.add(data);
+        }
+        return false;
+    }
+
+    public void closeSocket(){
+        if (null != this.socket){
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }
 /**
  * 核心类,单例
@@ -70,11 +119,6 @@ class RCTLConnetion {
 public class RCTLCore {
     private static RCTLCore RCTLCore = null;
     private boolean start = false;
-    private Queue<byte[]> readQueue = null;
-    private Thread readThread = null;
-
-    private Queue<byte[]> writeQueue = null;
-    private Thread writeThread = null;
     private List<RCTLConnetion> connetionList = null;
     private RCTLCore() {
         init();
@@ -89,7 +133,11 @@ public class RCTLCore {
         }
         return RCTLCore;
     }
-
+    // 销毁
+    public void destroyRCTLConnection(RCTLConnetion connetion) {
+           connetionList.remove(connetion);
+           connetion.closeSocket();
+    }
     /*
     * 初始化,完成如下功能
     * 1、登录平台
@@ -97,12 +145,9 @@ public class RCTLCore {
     * 3、创建收发消息的队列
     */
     private void init() {
-        readQueue = new ArrayBlockingQueue<byte[]>(250);
-        writeQueue = new ArrayBlockingQueue<byte[]>(250);
         // 建立连接,建立成功之后为这个连接创建读写线程
         connetionList = new LinkedList<>();
-
-        String host = "192.168.200.107";
+        String host = "192.168.200.111";
         int port = 1399;
 
         try{
@@ -121,21 +166,17 @@ public class RCTLCore {
         }
     }
 
-    public int sendData(byte[] data){
-        Log.d(TAG, "sendData: size = " + data.length);
-        if (null != this.writeQueue && this.writeQueue.add(data)) {
-            return 0;
+    public boolean sendData(byte[] data){
+        for (RCTLConnetion conn :
+                connetionList) {
+            return conn.writeData(data);
         }
-        return -1;
+        return false;
     }
-    public int sendCMD(byte[] data){
-        System.out.println("send CMD size = "+ data.length);
-        if (null != this.writeQueue && this.writeQueue.add(data)) {
-            return 0;
+    public byte[] readData() {
+        for (RCTLConnetion conn : this.connetionList) {
+            return conn.readDate();
         }
-        return -1;
-    }
-    public int receiveData(){
-        return 0;
+        return null;
     }
 }
