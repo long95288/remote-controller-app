@@ -1,6 +1,5 @@
 package com.longquanxiao.remotecontroller.core;
 
-import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,7 +11,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static android.content.ContentValues.TAG;
 
 
 class RCTLConnetion {
@@ -98,7 +96,15 @@ class RCTLConnetion {
 
     public boolean writeData(byte[] data) {
         if (null != this.writeQueue){
-            return this.writeQueue.add(data);
+            try {
+                return this.writeQueue.add(data);
+            }catch (IllegalArgumentException e) {
+                this.writeQueue.poll();
+                e.printStackTrace();
+                return false;
+            }catch (Exception e){
+                return false;
+            }
         }
         return false;
     }
@@ -107,6 +113,7 @@ class RCTLConnetion {
         if (null != this.socket){
             try {
                 socket.close();
+                active = false;
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -147,7 +154,7 @@ public class RCTLCore {
     private void init() {
         // 建立连接,建立成功之后为这个连接创建读写线程
         connetionList = new LinkedList<>();
-        String host = "192.168.200.111";
+        String host = "192.168.200.115";
         int port = 1399;
 
         try{

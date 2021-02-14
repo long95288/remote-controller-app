@@ -125,7 +125,11 @@ public class FirstFragment extends Fragment {
                         }
                         updateText = false;
                     }else{
-                        statusView.setText(System.currentTimeMillis() + ":" + new String(RCTLCore.getInstance().readData()));
+                        byte[] readbuf = RCTLCore.getInstance().readData();
+                        if (null != readbuf){
+                            String msg = System.currentTimeMillis() + ":" + new String(readbuf);
+                            statusView.setText(msg);
+                        }
                     }
                 }
             }
