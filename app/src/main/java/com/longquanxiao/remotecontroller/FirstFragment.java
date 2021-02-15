@@ -68,37 +68,6 @@ public class FirstFragment extends Fragment {
         return this.statusViewText;
     }
 
-    public String getLocal4GAddress() {
-        String ip = "";
-        try {
-            ArrayList<NetworkInterface> networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (NetworkInterface n : networkInterfaces) {
-                ArrayList<InetAddress> inetAddress = Collections.list(n.getInetAddresses());
-                for (InetAddress address : inetAddress) {
-                    if (!address.isLoopbackAddress() && !address.isLinkLocalAddress()) {
-                        ip = address.getHostAddress();
-                        return ip;
-                    }
-                }
-            }
-        }catch (Exception e){
-            setStatusViewText(e.getMessage());
-        }
-        return ip;
-    }
-    public String geLocalWifiAddress(View view) {
-        String ipv4 = "";
-        WifiManager wifiManager = (WifiManager)view.getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        // 检查并开启wifi
-        if (!wifiManager.isWifiEnabled()) {
-            wifiManager.setWifiEnabled(true);
-        }
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        int ipAddress = wifiInfo.getIpAddress();
-        ipv4 = (ipAddress & 0xFF) + "." + ((ipAddress >> 8) & 0xFF) + "." + ((ipAddress >> 16) & 0xFF) + "." + ((ipAddress >> 24) & 0xFF);
-        return ipv4;
-    }
-
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         view.setBackgroundResource(R.drawable.bg);
@@ -206,10 +175,10 @@ public class FirstFragment extends Fragment {
             }
         });
 
-        String ip = this.geLocalWifiAddress(view);
+        String ip = NetTool.geLocalWifiAddress(view);
         setStatusViewText("WIFI连接IP:"+ip);
         if ("0.0.0.0".equals(ip)){
-            ip = this.getLocal4GAddress();
+            ip = NetTool.getLocal4GAddress();
         }
         ((EditText)view.findViewById(R.id.localIPEditText)).setText(ip);
         cancelShutdownBtn.setOnClickListener(new View.OnClickListener() {

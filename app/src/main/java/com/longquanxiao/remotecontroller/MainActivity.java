@@ -1,5 +1,6 @@
 package com.longquanxiao.remotecontroller;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -42,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 //        // 设置背景图片
-//        getWindow().setBackgroundDrawableResource(R.drawable.bg);
+        getWindow().setBackgroundDrawableResource(R.drawable.bg);
     }
 
     @Override
