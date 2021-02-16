@@ -40,8 +40,6 @@ class RCTLConnetion {
                          int ret = inputStream.read(buffer);
                          if (-1 == ret) {
                          }else if (ret > 0) {
-//                             System.out.println("thread read data size = " + ret);
-//                             System.out.println("thread read data "+ new String(buffer,0, ret));
                              byte[] e1 = new byte[ret];
                              for (int i = 0; i < ret; i++) {
                                  e1[i] = buffer[i];
@@ -126,9 +124,12 @@ class RCTLConnetion {
 public class RCTLCore {
     private static RCTLCore RCTLCore = null;
     private boolean start = false;
+    private String serverIP = null;
+    private int serverPort = 1399;
     private List<RCTLConnetion> connetionList = null;
     private RCTLCore() {
-        init();
+        connetionList = new LinkedList<>();
+        // init();
     }
     public static RCTLCore getInstance() {
         if (null == RCTLCore) {
@@ -145,21 +146,37 @@ public class RCTLCore {
            connetionList.remove(connetion);
            connetion.closeSocket();
     }
+
+    public String getServerIP() {
+        return serverIP;
+    }
+
+    public void setServerIP(String serverIP) {
+        this.serverIP = serverIP;
+    }
+
+    public int getServerPort() {
+        return serverPort;
+    }
+
+    public void setServerPort(int serverPort) {
+        this.serverPort = serverPort;
+    }
+
     /*
     * 初始化,完成如下功能
     * 1、登录平台
     * 2、与平台建立连接,维持心跳
     * 3、创建收发消息的队列
     */
-    private void init() {
+    public void createServerConnection() {
         // 建立连接,建立成功之后为这个连接创建读写线程
-        connetionList = new LinkedList<>();
-        String host = "192.168.200.115";
-        int port = 1399;
-
         try{
+            if (connetionList.size() > 0){
+                return;
+            }
             // 建立socket
-            Socket socket = new Socket(host, port);
+            Socket socket = new Socket(this.serverIP, this.serverPort);
             // 建立成功之后需要开启新的线程
             RCTLConnetion connection = new RCTLConnetion(socket);
             connetionList.add(connection);

@@ -52,6 +52,13 @@ public class FirstFragment extends Fragment {
     TextView statusView = null;
     String statusViewText = "";
     boolean updateText = false;
+
+    EditText ipEditText = null;
+    String ipEditTextValue = null;
+    boolean updateEditTextValue = false;
+
+    boolean hasNoticeServerIP = false;
+    String serverIP = null;
     @Override
     public View onCreateView(
             LayoutInflater inflater, ViewGroup container,
@@ -64,6 +71,12 @@ public class FirstFragment extends Fragment {
         updateText = true;
         this.statusViewText = text;
     }
+    public void setEditTextText(String text) {
+        if (null != this.ipEditText) {
+           updateEditTextValue = true;
+           ipEditTextValue= text;
+        }
+    }
     public String getStatusViewText() {
         return this.statusViewText;
     }
@@ -75,7 +88,28 @@ public class FirstFragment extends Fragment {
 
         // 初始化页面数据,当前电脑的状态,
         statusView = view.findViewById(R.id.statusText);
-        EditText ipEditText = ((EditText)view.findViewById(R.id.ipInputText));
+        ipEditText = ((EditText)view.findViewById(R.id.ipInputText));
+
+        // 获得服务器IP地址
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String ipv4 = NetTool.geLocalWifiAddress(view);
+                String getServerIP = NetTool.getServerIp(ipv4);
+                if (getServerIP == null || "0.0.0.0".equals(getServerIP)){
+                    hasNoticeServerIP = false;
+                }else{
+                    hasNoticeServerIP = true;
+                    serverIP = getServerIP;
+                    setEditTextText(serverIP);
+                    // 创建连接
+                    RCTLCore.getInstance().setServerIP(serverIP);
+                    RCTLCore.getInstance().setServerPort(1399);
+                    RCTLCore.getInstance().createServerConnection();
+                }
+            }
+        }).start();
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -98,6 +132,17 @@ public class FirstFragment extends Fragment {
                         if (null != readbuf){
                             String msg = System.currentTimeMillis() + ":" + new String(readbuf);
                             statusView.setText(msg);
+                        }
+                    }
+
+                    if (updateEditTextValue) {
+                        if (null != ipEditText){
+                            try {
+                                ipEditText.setText(ipEditTextValue);
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
+                            updateEditTextValue = false;
                         }
                     }
                 }
