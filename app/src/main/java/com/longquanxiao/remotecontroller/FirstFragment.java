@@ -1,5 +1,6 @@
 package com.longquanxiao.remotecontroller;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.net.wifi.WifiInfo;
@@ -12,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -19,6 +21,7 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.alibaba.fastjson.JSON;
+import com.longquanxiao.remotecontroller.cmd.RemoteControlCMD;
 import com.longquanxiao.remotecontroller.core.RCTLCore;
 import com.longquanxiao.remotecontroller.utils.NetTool;
 
@@ -59,6 +62,10 @@ public class FirstFragment extends Fragment {
 
     boolean hasNoticeServerIP = false;
     String serverIP = null;
+
+
+    SeekBar masterVolumeSeekBar = null;
+    TextView masterVolumeTextView = null;
     @Override
     public View onCreateView(
             LayoutInflater inflater, ViewGroup container,
@@ -90,25 +97,73 @@ public class FirstFragment extends Fragment {
         statusView = view.findViewById(R.id.statusText);
         ipEditText = ((EditText)view.findViewById(R.id.ipInputText));
 
+         masterVolumeTextView = ((TextView)view.findViewById(R.id.masterVolumeTextView));
+         masterVolumeSeekBar = ((SeekBar)view.findViewById(R.id.masterSeekBar));
+         masterVolumeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+             @Override
+             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                 System.out.println("Seekbar progress "+progress);
+                 masterVolumeTextView.setText(""+progress);
+                 RCTLCore.getInstance().setServerIP(ipEditText.getText().toString());
+                 RCTLCore.getInstance().setServerPort(9999);
+                 System.out.println("结束滑块"+seekBar.getProgress());
+                 new Thread(new Runnable() {
+                     @Override
+                     public void run() {
+                         try {
+                             int volume = RemoteControlCMD.setMasterVolume(seekBar.getProgress());
+                             masterVolumeTextView.setText(Integer.toString(volume));
+                         }catch (Exception e){
+                             e.printStackTrace();
+                         }
+                     }
+                 }).start();
+             }
+
+             @Override
+             public void onStartTrackingTouch(SeekBar seekBar) {
+                 System.out.println("开始滑块...");
+             }
+
+             @SuppressLint("SetTextI18n")
+             @Override
+             public void onStopTrackingTouch(SeekBar seekBar) {
+                 RCTLCore.getInstance().setServerIP(ipEditText.getText().toString());
+                 RCTLCore.getInstance().setServerPort(9999);
+                 System.out.println("结束滑块"+seekBar.getProgress());
+                     new Thread(new Runnable() {
+                         @Override
+                         public void run() {
+                             try {
+                             int volume = RemoteControlCMD.setMasterVolume(seekBar.getProgress());
+                             masterVolumeTextView.setText(Integer.toString(volume));
+                             }catch (Exception e){
+                                 e.printStackTrace();
+                             }
+                         }
+                     }).start();
+             }
+         });
+
         // 获得服务器IP地址
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String ipv4 = NetTool.geLocalWifiAddress(view);
-                String getServerIP = NetTool.getServerIp(ipv4);
-                if (getServerIP == null || "0.0.0.0".equals(getServerIP)){
-                    hasNoticeServerIP = false;
-                }else{
-                    hasNoticeServerIP = true;
-                    serverIP = getServerIP;
-                    setEditTextText(serverIP);
-                    // 创建连接
-                    RCTLCore.getInstance().setServerIP(serverIP);
-                    RCTLCore.getInstance().setServerPort(1399);
-                    RCTLCore.getInstance().createServerConnection();
-                }
-            }
-        }).start();
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                String ipv4 = NetTool.geLocalWifiAddress(view);
+//                String getServerIP = NetTool.getServerIp(ipv4);
+//                if (getServerIP == null || "0.0.0.0".equals(getServerIP)){
+//                    hasNoticeServerIP = false;
+//                }else{
+//                    hasNoticeServerIP = true;
+//                    serverIP = getServerIP;
+//                    setEditTextText(serverIP);
+//                    // 创建连接
+//                    RCTLCore.getInstance().setServerIP(serverIP);
+//                    RCTLCore.getInstance().setServerPort(1399);
+//                    RCTLCore.getInstance().createServerConnection();
+//                }
+//            }
+//        }).start();
 
         new Thread(new Runnable() {
             @Override
@@ -162,61 +217,20 @@ public class FirstFragment extends Fragment {
         shutdownBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // 发送一个关闭电脑的同步请求
-//                new Thread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        try {
-//                            OkHttpClient client = new OkHttpClient();
-//                            int port = 9999;
-//                            String url = "http://192.168.200.107" +":"+ port + "?id=2";
-//                            System.out.println("请求IP : " + url);
-//                            Request request = new Request.Builder()
-//                                    .url(url)
-//                                    .get()
-//                                    .build();
-//                            Call call = client.newCall(request);
-//                            Response response = call.execute();
-//                            if (response.isSuccessful()) {
-////                                statusView.setText(response.body().string());
-//                                System.out.printf("Response %s%n", response.body().string());
-//                                statusView.setText("请求成功");
-//                            }else{
-//                                System.out.println("请求失败");
-//                            }
-//                        }catch (Exception e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                }).start();
-                // 发送一个异步请求
-                OkHttpClient client = new OkHttpClient();
                 String ip = ipEditText.getText().toString();
-                String url = "http://"+ ip + ":9999/cmd?id=3";
-                System.out.println("请求ip "+url);
-                setStatusViewText("请求ip "+url);
-                RCTLCore.getInstance().sendData((getStatusViewText().getBytes()));
-                Request request = new Request.Builder().url(url).build();
-                Call call = client.newCall(request);
-                call.enqueue(new Callback() {
+                RCTLCore.getInstance().setServerIP(ip);
+                RCTLCore.getInstance().setServerPort(9999);
+                new Thread(new Runnable() {
                     @Override
-                    public void onFailure(Call call, IOException e) {
-                        setStatusViewText(e.getMessage());
-                    }
-
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        String body = response.body().string();
+                    public void run() {
                         try {
-                            ResponseStatus responseStatus = JSON.parseObject(body, ResponseStatus.class);
-                            setStatusViewText(responseStatus.message);
-                            updateText = true;
-                        }catch (Exception e){
-                            setStatusViewText(e.getMessage());
+                            RemoteControlCMD.setShutdownPlan(30);
+
+                        }catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
-                });
+                }).start();
             }
         });
 
@@ -229,32 +243,15 @@ public class FirstFragment extends Fragment {
         cancelShutdownBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                OkHttpClient client = new OkHttpClient();
-                String ip = ipEditText.getText().toString();
-                String url = "http://"+ip+":9999/cmd?id=2";
-                System.out.println("请求ip "+url);
-                setStatusViewText("请求ip "+url);
-                Request request = new Request.Builder().url(url).build();
-
-                Call call = client.newCall(request);
-                call.enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        setStatusViewText(e.getMessage());
+                try {
+                    Boolean ret = RemoteControlCMD.cancelShutdownPlan();
+                    if (null != ret && ret){
+                        setStatusViewText("设置成功");
                     }
+                }catch (Exception e){
+                    setStatusViewText(e.getMessage());
+                }
 
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        String body = response.body().string();
-                        try {
-                            ResponseStatus responseStatus = JSON.parseObject(body, ResponseStatus.class);
-                            setStatusViewText(responseStatus.message);
-                        }catch (Exception e){
-                            setStatusViewText(e.getMessage());
-                            e.printStackTrace();
-                        }
-                    }
-                });
             }
         });
     }

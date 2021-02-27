@@ -48,9 +48,10 @@
         android:text="取消关闭电脑"
         app:layout_constraintBottom_toTopOf="@+id/button_first"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.495"
+        app:layout_constraintHorizontal_bias="0.477"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/shutdownBtn" />
+        app:layout_constraintTop_toBottomOf="@+id/shutdownBtn"
+        app:layout_constraintVertical_bias="0.273" />
 
     <TextView
         android:id="@+id/statusText"
@@ -99,5 +100,47 @@
         app:layout_constraintEnd_toStartOf="@+id/localIPEditText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView2" />
+
+    <SeekBar
+        android:id="@+id/masterSeekBar"
+        android:layout_width="187dp"
+        android:layout_height="27dp"
+        android:layerType="none"
+        android:max="100"
+        android:progress="1"
+        app:layout_constraintBottom_toTopOf="@+id/shutdownBtn"
+        app:layout_constraintEnd_toStartOf="@+id/masterVolumeTextView"
+        app:layout_constraintStart_toEndOf="@+id/textView"
+        app:layout_constraintTop_toBottomOf="@+id/statusText"
+        app:layout_constraintVertical_bias="0.505" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="81dp"
+        android:layout_height="37dp"
+        android:text="总音量"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/shutdownBtn"
+        app:layout_constraintEnd_toStartOf="@+id/masterSeekBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/statusText"
+        app:layout_constraintVertical_bias="0.502" />
+
+    <TextView
+        android:id="@+id/masterVolumeTextView"
+        android:layout_width="54dp"
+        android:layout_height="39dp"
+        android:layout_marginEnd="7dp"
+        android:layout_marginRight="7dp"
+        android:maxLines="1"
+        android:text="-1"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/shutdownBtn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/masterSeekBar"
+        app:layout_constraintTop_toBottomOf="@+id/statusText"
+        app:layout_constraintVertical_bias="0.497" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
