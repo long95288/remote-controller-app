@@ -7,6 +7,8 @@ import android.net.wifi.WifiManager;
 import android.view.View;
 //import org.apache.http.conn.util.InetAddressUtils;
 
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
@@ -32,61 +34,43 @@ public class NetTool {
         if (null == localIpv4 || "0.0.0.0".equals(localIpv4)) {
             return null;
         }
-        final int[] threadNum = {0};
-        final String[] serverIP = {""};
         String ipPrefix = localIpv4.substring(0, localIpv4.lastIndexOf('.') + 1);
         System.out.println("IP Prefix :"+ ipPrefix);
-        int serverPort = 1399;
-        final boolean[] noticeServer = {false};
-        for (int i = 1; i <= 255; i++) {
-            if (noticeServer[0]){
-                break;
-            }
-            String finalServerIP = ipPrefix + i;
-            if (threadNum[0] > 20){
-                i --;
-                try{
-                    Thread.sleep(300);
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
-                continue;
-            }
-            if (!finalServerIP.equals(localIpv4)){
-                // 尝试建立连接,发送Hello Server,接收到Hello Client算作成功找到对应的IP地址
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (noticeServer[0]){
-                            return;
-                        }
-                        threadNum[0]++;
-                        try {
-                            System.out.println("Try Connect "+ finalServerIP + ":"+serverPort);
-                            Socket socket = new Socket(finalServerIP, serverPort);
-                            byte[] buffer = new byte[1024];
-                            int readn = socket.getInputStream().read(buffer);
-                            if (readn > 0) {
-                                byte[] readvalue = new byte[readn];
-                                System.arraycopy(buffer,0, readvalue,0, readn);
-                                if ("SERVER SAY HELLO".equals(new String(readvalue))){
-                                    System.out.println("getServerIp find ServerIP "+ finalServerIP);
-                                    serverIP[0] = finalServerIP;
-                                    noticeServer[0] = true;
-                                }
-                            }
-                            if (socket != null) {
-                                socket.close();
-                            }
-                        }catch (Exception e){
-                            e.printStackTrace();
-                        }
-                        threadNum[0] --;
+        int serverPort = 1400;
+        // 使用UDP向每个端口发个UDP包,然后查看那个端口返回数据
+        try{
+            DatagramSocket udpSocket = new DatagramSocket();
+            for (int i = 1; i <= 255; i++) {
+                String findServerIP = ipPrefix + i;
+                if (!findServerIP.equals(localIpv4)){
+                    try {
+                        udpSocket.send(new DatagramPacket("123".getBytes(), "123".length(), InetAddress.getByName(findServerIP), serverPort));
+                        System.out.println("探测:"+ findServerIP);
+                    }catch (Exception e){
+                        e.printStackTrace();
                     }
-                }).start();
+                }
             }
+            // 接收数据
+            for(int i = 0;i < 255;i ++) {
+                byte[] recieveData = new byte[1024];
+                System.out.println("等待响应");
+                DatagramPacket receivePacket = new DatagramPacket(recieveData, recieveData.length);
+                udpSocket.receive(receivePacket);
+                String receiveStr =  new String(recieveData).substring(0, receivePacket.getLength());
+                System.out.println("收到响应:"+ receiveStr);
+                // 收到数据,读取出
+                if ("321".equals(receiveStr)) {
+                    // 是服务器响应,取出这个packet的IP和PORT
+                    String peerIp = receivePacket.getAddress().getHostAddress();
+                    System.out.println("探测到服务器IP:" + peerIp);
+                    return peerIp;
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
         }
-        return serverIP[0];
+        return null;
     }
     public static String geLocalWifiAddress(View view) {
         String ipv4 = "";

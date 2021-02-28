@@ -117,6 +117,27 @@ class SetMasterVolumeResponseDTO {
         this.volume = volume;
     }
 }
+class GetMasterVolumeResponseDTO extends BaseResponseDTO {
+
+    @JSONField(name = "Volume")
+    private int volume;
+
+    public GetMasterVolumeResponseDTO(int volume) {
+        this.volume = volume;
+    }
+
+    public GetMasterVolumeResponseDTO() {
+    }
+
+    public int getVolume() {
+        return volume;
+    }
+
+    public void setVolume(int volume) {
+        this.volume = volume;
+    }
+}
+
 public class RemoteControlCMD {
     public static final int  SETSHUTDOWNPLAN_CMD = 1;
     public static final int CANCELSHUTDOWNPLAN_CMD = 2;
@@ -125,7 +146,33 @@ public class RemoteControlCMD {
 
 
     public static Integer getMasterVolume() throws Exception {
-        return null;
+        try {
+            OkHttpClient client = new OkHttpClient();
+            String url = "http://"+ RCTLCore.getInstance().getServerIP() +":"+ RCTLCore.getInstance().getServerPort() + "/cmd";
+            System.out.println("请求IP : " + url);
+            String requestBody = JSON.toJSONString(new BaseRequestDTO(GETMASTERVOLUME_CMD));
+            System.out.println("GetMasterVolume request body: " + requestBody);
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(MediaType.get("application/json"), requestBody))
+                    .build();
+            Call call = client.newCall(request);
+            Response response = call.execute();
+            if (response.isSuccessful()) {
+                String requestBodyStr =  response.body().string();
+                System.out.printf("Response %s%n",requestBodyStr);
+                BaseResponseDTO baseResponseDTO = JSON.parseObject(requestBodyStr, BaseResponseDTO.class);
+                if (null != baseResponseDTO) {
+                    GetMasterVolumeResponseDTO getMasterVolumeResponseDTO = JSON.parseObject(baseResponseDTO.data.toString(), GetMasterVolumeResponseDTO.class);
+                    return getMasterVolumeResponseDTO.getVolume();
+                }
+            }else{
+                System.out.println("请求失败");
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
     public static Integer setMasterVolume(int voloume) throws Exception {
             try {

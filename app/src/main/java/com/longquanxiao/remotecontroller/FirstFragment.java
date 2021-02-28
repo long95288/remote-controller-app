@@ -81,7 +81,7 @@ public class FirstFragment extends Fragment {
     public void setEditTextText(String text) {
         if (null != this.ipEditText) {
            updateEditTextValue = true;
-           ipEditTextValue= text;
+           this.ipEditTextValue= text;
         }
     }
     public String getStatusViewText() {
@@ -95,7 +95,7 @@ public class FirstFragment extends Fragment {
 
         // 初始化页面数据,当前电脑的状态,
         statusView = view.findViewById(R.id.statusText);
-        ipEditText = ((EditText)view.findViewById(R.id.ipInputText));
+        ipEditText = view.findViewById(R.id.ipInputText);
 
          masterVolumeTextView = ((TextView)view.findViewById(R.id.masterVolumeTextView));
          masterVolumeSeekBar = ((SeekBar)view.findViewById(R.id.masterSeekBar));
@@ -146,24 +146,24 @@ public class FirstFragment extends Fragment {
          });
 
         // 获得服务器IP地址
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                String ipv4 = NetTool.geLocalWifiAddress(view);
-//                String getServerIP = NetTool.getServerIp(ipv4);
-//                if (getServerIP == null || "0.0.0.0".equals(getServerIP)){
-//                    hasNoticeServerIP = false;
-//                }else{
-//                    hasNoticeServerIP = true;
-//                    serverIP = getServerIP;
-//                    setEditTextText(serverIP);
-//                    // 创建连接
-//                    RCTLCore.getInstance().setServerIP(serverIP);
-//                    RCTLCore.getInstance().setServerPort(1399);
-//                    RCTLCore.getInstance().createServerConnection();
-//                }
-//            }
-//        }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String ipv4 = NetTool.geLocalWifiAddress(view);
+                String getServerIP = NetTool.getServerIp(ipv4);
+                if (getServerIP == null || "0.0.0.0".equals(getServerIP)){
+                    hasNoticeServerIP = false;
+                }else{
+                    hasNoticeServerIP = true;
+                    serverIP = getServerIP;
+                    setEditTextText(getServerIP);
+                    // 创建连接
+                    RCTLCore.getInstance().setServerIP(serverIP);
+                    RCTLCore.getInstance().setServerPort(1399);
+                    RCTLCore.getInstance().createServerConnection();
+                }
+            }
+        }).start();
 
         new Thread(new Runnable() {
             @Override
