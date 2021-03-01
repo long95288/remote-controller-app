@@ -1,6 +1,10 @@
 package com.longquanxiao.remotecontroller.core;
 
 
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -127,10 +131,32 @@ public class RCTLCore {
     private String serverIP = null;
     private int serverPort = 1399;
     private List<RCTLConnetion> connetionList = null;
+    private Handler uiHandler = null;
+
     private RCTLCore() {
         connetionList = new LinkedList<>();
         // init();
     }
+    private void insertMessage(String s) {
+        if (null != this.uiHandler) {
+            Message msg = new Message();
+            msg.what = 1;
+            msg.obj = s;
+            this.uiHandler.sendMessage(msg);
+        }
+    }
+    private void insertMessegeTest(String s) {
+        if (null != this.uiHandler){
+            Message msg = new Message();
+            msg.what = 1;
+            msg.obj = s;
+            Bundle bundle = new Bundle();
+            bundle.putString("bundledata", "Hello World");
+            msg.setData(bundle);
+            this.uiHandler.sendMessage(msg);
+        }
+    }
+
     public static RCTLCore getInstance() {
         if (null == RCTLCore) {
             synchronized (RCTLCore.class) {
@@ -152,6 +178,7 @@ public class RCTLCore {
     }
 
     public void setServerIP(String serverIP) {
+        insertMessage("Core设置IP:"+serverIP);
         this.serverIP = serverIP;
     }
 
@@ -202,5 +229,9 @@ public class RCTLCore {
             return conn.readDate();
         }
         return null;
+    }
+
+    public void setUiHandler(Handler uiHandler) {
+        this.uiHandler = uiHandler;
     }
 }

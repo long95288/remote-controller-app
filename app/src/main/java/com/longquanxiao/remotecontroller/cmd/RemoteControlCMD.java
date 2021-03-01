@@ -138,6 +138,57 @@ class GetMasterVolumeResponseDTO extends BaseResponseDTO {
     }
 }
 
+class SetShutdownPlanRequestDTO extends BaseRequestDTO {
+
+    @JSONField(name = "ShutdownTime")
+    private int shutdownTime;
+
+    public SetShutdownPlanRequestDTO(int cmd) {
+        super(cmd);
+    }
+
+    public SetShutdownPlanRequestDTO(int cmd, int shutdownTime) {
+        super(cmd);
+        this.shutdownTime = shutdownTime;
+    }
+
+    public int getShutdownTime() {
+        return shutdownTime;
+    }
+
+    public void setShutdownTime(int shutdownTime) {
+        this.shutdownTime = shutdownTime;
+    }
+}
+
+
+class SetShutdownPlanResponseDTO {
+    @JSONField(name = "ShutdownTime")
+    private int shutdownTime;
+
+    public SetShutdownPlanResponseDTO() {
+    }
+
+    public SetShutdownPlanResponseDTO(int shutdownTime) {
+        this.shutdownTime = shutdownTime;
+    }
+
+    public int getShutdownTime() {
+        return shutdownTime;
+    }
+
+    public void setShutdownTime(int shutdownTime) {
+        this.shutdownTime = shutdownTime;
+    }
+}
+class CancelShutdownPlanRequestDTO extends BaseRequestDTO {
+    public CancelShutdownPlanRequestDTO(int cmd) {
+        super(cmd);
+    }
+}
+class CancelShutdownPlanResponseDTO  {
+}
+
 public class RemoteControlCMD {
     public static final int  SETSHUTDOWNPLAN_CMD = 1;
     public static final int CANCELSHUTDOWNPLAN_CMD = 2;
@@ -206,33 +257,62 @@ public class RemoteControlCMD {
             return -1;
     }
 
-    public static Boolean cancelShutdownPlan() throws Exception {
-        OkHttpClient client = new OkHttpClient();
-        String ip = RCTLCore.getInstance().getServerIP();
-        String url = "http://"+ip+":9999/cmd?id=2";
-        System.out.println("请求ip "+url);
-        Request request = new Request.Builder().url(url).build();
-        Call call = client.newCall(request);
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                try {
-                    throw e;
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
+    public static Boolean cancelShutdownPlan() {
+        try {
+            OkHttpClient client = new OkHttpClient();
+            String ip = RCTLCore.getInstance().getServerIP();
+            String url = "http://"+ip+":" +RCTLCore.getInstance().getServerPort()+"/cmd";
+            System.out.println("请求ip "+url);
+            String requestBody = JSON.toJSONString(new BaseRequestDTO(CANCELSHUTDOWNPLAN_CMD));
+            Request request = new Request
+                    .Builder()
+                    .url(url)
+                    .post(RequestBody.create(MediaType.get("application/json"), requestBody))
+                    .build();
+            Call call = client.newCall(request);
+            Response response = call.execute();
+            if (response.isSuccessful()) {
+                String requestBodyStr =  response.body().string();
+                System.out.printf("Response %s%n",requestBodyStr);
+                BaseResponseDTO baseResponseDTO = JSON.parseObject(requestBodyStr, BaseResponseDTO.class);
+                if (null != baseResponseDTO && 2000000 == baseResponseDTO.optionStatus) {
+                    return true;
                 }
+            }else{
+                System.out.println("请求失败");
             }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String body = response.body().string();
-            }
-        });
-
-        return null;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+        return false;
     }
 
     public static Boolean setShutdownPlan(int planTime) throws Exception {
-        return null;
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://"+ RCTLCore.getInstance().getServerIP() +":"+ RCTLCore.getInstance().getServerPort() + "/cmd";
+        System.out.println("请求IP : " + url);
+        String requestBody = JSON.toJSONString(new SetShutdownPlanRequestDTO(SETSHUTDOWNPLAN_CMD, planTime));
+
+        System.out.println("SetShutdownPlanRequestDTO request body: " + requestBody);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(RequestBody.create(MediaType.get("application/json"), requestBody))
+                .build();
+        Call call = client.newCall(request);
+        Response response = call.execute();
+        if (response.isSuccessful()) {
+            String requestBodyStr =  response.body().string();
+            System.out.printf("Response %s%n",requestBodyStr);
+            BaseResponseDTO baseResponseDTO = JSON.parseObject(requestBodyStr, BaseResponseDTO.class);
+            if (null != baseResponseDTO && 2000000 == baseResponseDTO.optionStatus) {
+                SetShutdownPlanResponseDTO setShutdownPlanResponseDTO = JSON.parseObject(baseResponseDTO.data.toString(), SetShutdownPlanResponseDTO.class);
+                System.out.println("setShutdownPlanResponseDTO shutdownTime"+ setShutdownPlanResponseDTO.getShutdownTime());
+                return true;
+            }
+        }else{
+            System.out.println("请求失败");
+        }
+        return false;
     }
 }

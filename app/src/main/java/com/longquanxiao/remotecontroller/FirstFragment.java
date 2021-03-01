@@ -1,44 +1,28 @@
 package com.longquanxiao.remotecontroller;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
-import android.graphics.drawable.Drawable;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.util.JsonReader;
-import android.util.TimeUtils;
+import android.os.Handler;
+import android.os.Message;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
-import com.alibaba.fastjson.JSON;
 import com.longquanxiao.remotecontroller.cmd.RemoteControlCMD;
 import com.longquanxiao.remotecontroller.core.RCTLCore;
 import com.longquanxiao.remotecontroller.utils.NetTool;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Timer;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 class ResponseStatus {
     String message;
 
@@ -53,19 +37,39 @@ class ResponseStatus {
 
 public class FirstFragment extends Fragment {
     TextView statusView = null;
-    String statusViewText = "";
-    boolean updateText = false;
-
     EditText ipEditText = null;
-    String ipEditTextValue = null;
-    boolean updateEditTextValue = false;
 
     boolean hasNoticeServerIP = false;
     String serverIP = null;
 
-
     SeekBar masterVolumeSeekBar = null;
     TextView masterVolumeTextView = null;
+
+    private final Handler handler;
+    {
+        handler = new Handler() {
+            @SuppressLint("HandlerLeak")
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                super.handleMessage(msg);
+                if (msg.what == 1) {
+                    System.out.println("收到消息");
+                    // status的
+//                    System.out.println("" + (String)msg.obj);
+//                    System.out.println("" + msg.getData().getString("bundledata"));
+                    statusView.setText("handler 更新UI"+(String)msg.obj);
+//                    statusView.setText(msg.getData().getString("bundledata"));
+                }
+            }
+
+            @Override
+            public void dispatchMessage(@NonNull Message msg) {
+                super.dispatchMessage(msg);
+
+            }
+        };
+    }
+
     @Override
     public View onCreateView(
             LayoutInflater inflater, ViewGroup container,
@@ -74,20 +78,8 @@ public class FirstFragment extends Fragment {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_first, container, false);
     }
-    public void setStatusViewText(String text) {
-        updateText = true;
-        this.statusViewText = text;
-    }
-    public void setEditTextText(String text) {
-        if (null != this.ipEditText) {
-           updateEditTextValue = true;
-           this.ipEditTextValue= text;
-        }
-    }
-    public String getStatusViewText() {
-        return this.statusViewText;
-    }
 
+    @SuppressLint("SetTextI18n")
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         view.setBackgroundResource(R.drawable.bg);
@@ -99,160 +91,134 @@ public class FirstFragment extends Fragment {
 
          masterVolumeTextView = ((TextView)view.findViewById(R.id.masterVolumeTextView));
          masterVolumeSeekBar = ((SeekBar)view.findViewById(R.id.masterSeekBar));
-         masterVolumeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-             @Override
-             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                 System.out.println("Seekbar progress "+progress);
-                 masterVolumeTextView.setText(""+progress);
-                 RCTLCore.getInstance().setServerIP(ipEditText.getText().toString());
-                 RCTLCore.getInstance().setServerPort(9999);
-                 System.out.println("结束滑块"+seekBar.getProgress());
-                 new Thread(new Runnable() {
-                     @Override
-                     public void run() {
-                         try {
-                             int volume = RemoteControlCMD.setMasterVolume(seekBar.getProgress());
-                             masterVolumeTextView.setText(Integer.toString(volume));
-                         }catch (Exception e){
-                             e.printStackTrace();
-                         }
-                     }
-                 }).start();
-             }
+         masterVolumeSeekBar.setOnSeekBarChangeListener(new MasterVolumeOnSeekBarChangeListener(this));
 
-             @Override
-             public void onStartTrackingTouch(SeekBar seekBar) {
-                 System.out.println("开始滑块...");
-             }
 
-             @SuppressLint("SetTextI18n")
-             @Override
-             public void onStopTrackingTouch(SeekBar seekBar) {
-                 RCTLCore.getInstance().setServerIP(ipEditText.getText().toString());
-                 RCTLCore.getInstance().setServerPort(9999);
-                 System.out.println("结束滑块"+seekBar.getProgress());
-                     new Thread(new Runnable() {
-                         @Override
-                         public void run() {
-                             try {
-                             int volume = RemoteControlCMD.setMasterVolume(seekBar.getProgress());
-                             masterVolumeTextView.setText(Integer.toString(volume));
-                             }catch (Exception e){
-                                 e.printStackTrace();
-                             }
-                         }
-                     }).start();
-             }
-         });
+         RCTLCore.getInstance().setUiHandler(handler);
 
-        // 获得服务器IP地址
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String ipv4 = NetTool.geLocalWifiAddress(view);
-                String getServerIP = NetTool.getServerIp(ipv4);
-                if (getServerIP == null || "0.0.0.0".equals(getServerIP)){
-                    hasNoticeServerIP = false;
-                }else{
-                    hasNoticeServerIP = true;
-                    serverIP = getServerIP;
-                    setEditTextText(getServerIP);
-                    // 创建连接
-                    RCTLCore.getInstance().setServerIP(serverIP);
-                    RCTLCore.getInstance().setServerPort(1399);
-                    RCTLCore.getInstance().createServerConnection();
-                }
-            }
-        }).start();
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true){
-                    try {
-                        Thread.sleep(500);
-                    }catch (Exception e){
-                        setStatusViewText(e.getMessage());
-                    }
-                    if (updateText){
-                        try {
-                            statusView.setText(statusViewText);
-                        }catch (Exception e){
-                            setStatusViewText(e.getMessage());
-                            e.printStackTrace();
-                        }
-                        updateText = false;
-                    }else{
-                        byte[] readbuf = RCTLCore.getInstance().readData();
-                        if (null != readbuf){
-                            String msg = System.currentTimeMillis() + ":" + new String(readbuf);
-                            statusView.setText(msg);
-                        }
-                    }
-
-                    if (updateEditTextValue) {
-                        if (null != ipEditText){
-                            try {
-                                ipEditText.setText(ipEditTextValue);
-                            }catch (Exception e){
-                                e.printStackTrace();
-                            }
-                            updateEditTextValue = false;
-                        }
-                    }
+        // 获得服务器IP地址和设备音量信息
+        new Thread(() -> {
+            String ipv4 = NetTool.geLocalWifiAddress(view);
+            String getServerIP = NetTool.getServerIp(ipv4);
+            if (getServerIP == null || "0.0.0.0".equals(getServerIP)){
+                hasNoticeServerIP = false;
+            }else{
+                hasNoticeServerIP = true;
+                serverIP = getServerIP;
+                // 使用post可以安全的更新UI数据
+                ipEditText.post(() -> ipEditText.setText(serverIP));
+                // 创建连接
+                RCTLCore.getInstance().setServerIP(serverIP);
+                RCTLCore.getInstance().setServerPort(9999);
+                hasNoticeServerIP = true;
+                // 获得音量
+                try {
+                    int volume = RemoteControlCMD.getMasterVolume();
+                    masterVolumeSeekBar.post(() -> masterVolumeSeekBar.setProgress(volume));
+                    masterVolumeTextView.post(() -> masterVolumeTextView.setText(""+volume));
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }).start();
 
         Button shutdownBtn = view.findViewById(R.id.shutdownBtn);
         Button cancelShutdownBtn = view.findViewById(R.id.cancelShutdownBtn);
-        view.findViewById(R.id.button_first).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                NavHostFragment.findNavController(FirstFragment.this)
-                        .navigate(R.id.action_FirstFragment_to_SecondFragment);
-            }
-        });
+        view.findViewById(R.id.button_first).setOnClickListener(view1 -> NavHostFragment.findNavController(FirstFragment.this)
+                .navigate(R.id.action_FirstFragment_to_SecondFragment));
 
-        shutdownBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String ip = ipEditText.getText().toString();
-                RCTLCore.getInstance().setServerIP(ip);
-                RCTLCore.getInstance().setServerPort(9999);
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            RemoteControlCMD.setShutdownPlan(30);
-
-                        }catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
-            }
-        });
+        shutdownBtn.setOnClickListener(this::onClickShutdownBtn);
 
         String ip = NetTool.geLocalWifiAddress(view);
-        setStatusViewText("WIFI连接IP:"+ip);
-        if ("0.0.0.0".equals(ip)){
-            ip = NetTool.getLocal4GAddress();
-        }
-        ((EditText)view.findViewById(R.id.localIPEditText)).setText(ip);
-        cancelShutdownBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    Boolean ret = RemoteControlCMD.cancelShutdownPlan();
-                    if (null != ret && ret){
-                        setStatusViewText("设置成功");
-                    }
-                }catch (Exception e){
-                    setStatusViewText(e.getMessage());
-                }
+        if ("0.0.0.0".equals(ip)){ ip = NetTool.getLocal4GAddress();}
 
-            }
-        });
+        ((EditText)view.findViewById(R.id.localIPEditText)).setText(ip);
+
+        cancelShutdownBtn.setOnClickListener(this::onClickCancelShutdownBtn);
+
     }
+
+    private void onClickCancelShutdownBtn(View v) {
+        if (hasNoticeServerIP) {
+            new Thread(() -> {
+                boolean ret = RemoteControlCMD.cancelShutdownPlan();
+                if (ret) {
+                    this.statusView.post(() -> statusView.setText("取消关机成功"));
+                } else {
+                    this.statusView.post(() -> statusView.setText("取消关机失败"));
+                }
+            }).start();
+        } else {
+            statusView.post(() -> statusView.setText("未设置服务器"));
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void onClickShutdownBtn(View v) {
+        if(!hasNoticeServerIP){
+            statusView.post(() -> statusView.setText("未查询到服务器"));
+            return;
+        }
+        new Thread(() -> {
+            try {
+                if (RemoteControlCMD.setShutdownPlan(30)) {
+                    statusView.post(() -> statusView.setText("电脑将在30s后关机"));
+                }
+            } catch (Exception e) {
+                statusView.post(() -> statusView.setText(e.getMessage()));
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    static class MasterVolumeOnSeekBarChangeListener implements OnSeekBarChangeListener {
+        FirstFragment firstFragment;
+        public MasterVolumeOnSeekBarChangeListener(FirstFragment fragment) {
+            this.firstFragment = fragment;
+        }
+
+        @SuppressLint("SetTextI18n")
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            System.out.println("Seekbar progress "+progress);
+            firstFragment.masterVolumeTextView.setText(""+progress);
+            RCTLCore.getInstance().setServerIP(firstFragment.ipEditText.getText().toString());
+            RCTLCore.getInstance().setServerPort(9999);
+            System.out.println("结束滑块"+seekBar.getProgress());
+            if (firstFragment.hasNoticeServerIP) {
+                new Thread(() -> {
+                    try {
+                        int volume = RemoteControlCMD.setMasterVolume(seekBar.getProgress());
+                        firstFragment.masterVolumeTextView.setText(Integer.toString(volume));
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }).start();
+            }else{
+                System.out.println("unconnected server");
+            }
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+            System.out.println("开始滑块...");
+        }
+
+        @SuppressLint("SetTextI18n")
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+            if (!firstFragment.hasNoticeServerIP) {
+                return;
+            }
+            new Thread(() -> {
+                try {
+                    int volume = RemoteControlCMD.setMasterVolume(seekBar.getProgress());
+                    firstFragment.masterVolumeTextView.setText(Integer.toString(volume));
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }).start();
+        }
+    }
+
 }
