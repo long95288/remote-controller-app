@@ -1,21 +1,26 @@
 package com.longquanxiao.remotecontroller.utils;
 
 import android.content.Context;
-import android.net.InetAddresses;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.view.View;
 //import org.apache.http.conn.util.InetAddressUtils;
 
+import com.longquanxiao.remotecontroller.core.RCTLCore;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
-import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 
 /**
  * 网络相关工具,包括嗅探局域网内的数据

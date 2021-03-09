@@ -37,6 +37,7 @@ dependencies {
     implementation 'androidx.navigation:navigation-ui:2.2.2'
     implementation 'com.squareup.okhttp3:okhttp:3.14.2'
     implementation 'com.squareup.okio:okio:1.17.4'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
 //    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     // https://mvnrepository.com/artifact/com.alibaba/fastjson
     compile group: 'com.alibaba', name: 'fastjson', version: '1.2.75'

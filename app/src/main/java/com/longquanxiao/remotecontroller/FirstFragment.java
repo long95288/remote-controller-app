@@ -127,6 +127,10 @@ public class FirstFragment extends Fragment {
         view.findViewById(R.id.button_first).setOnClickListener(view1 -> NavHostFragment.findNavController(FirstFragment.this)
                 .navigate(R.id.action_FirstFragment_to_SecondFragment));
 
+        // 获得电脑屏幕
+        view.findViewById(R.id.showPcScreenBtn).setOnClickListener(v -> NavHostFragment.findNavController(FirstFragment.this)
+                .navigate(R.id.action_FirstFragment_to_ScreenCaptureShow));
+
         shutdownBtn.setOnClickListener(this::onClickShutdownBtn);
 
         String ip = NetTool.geLocalWifiAddress(view);
