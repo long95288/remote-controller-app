@@ -1,22 +1,15 @@
 package com.longquanxiao.remotecontroller;
 
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
-import com.longquanxiao.remotecontroller.core.RCTLCore;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.res.TypedArrayUtils;
-
-import android.view.View;
 
 import android.view.Menu;
 import android.view.MenuItem;
-
-import java.io.ByteArrayInputStream;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -31,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(view -> Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show());
 //        // 设置背景图片
-        getWindow().setBackgroundDrawableResource(R.drawable.bg);
+//        getWindow().setBackgroundDrawableResource(R.drawable.bg);
     }
 
     @Override
