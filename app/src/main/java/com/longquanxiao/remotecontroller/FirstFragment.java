@@ -1,6 +1,7 @@
 package com.longquanxiao.remotecontroller;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -80,9 +81,6 @@ public class FirstFragment extends Fragment {
     @SuppressLint("SetTextI18n")
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        view.setBackgroundResource(R.drawable.bg);
-        view.getBackground().setAlpha(180);
-
         // 初始化页面数据,当前电脑的状态,
         statusView = view.findViewById(R.id.statusText);
         ipEditText = view.findViewById(R.id.ipInputText);
@@ -122,8 +120,14 @@ public class FirstFragment extends Fragment {
 
         Button shutdownBtn = view.findViewById(R.id.shutdownBtn);
         Button cancelShutdownBtn = view.findViewById(R.id.cancelShutdownBtn);
-        view.findViewById(R.id.button_first).setOnClickListener(view1 -> NavHostFragment.findNavController(FirstFragment.this)
-                .navigate(R.id.action_FirstFragment_to_SecondFragment));
+
+        view.findViewById(R.id.button_first).setOnClickListener((v ->
+        {
+            Intent intent = new Intent();
+            intent.putExtra("isPlayH264", true);
+            intent.setClass(this.getActivity(), H264StreamPlay.class);
+            startActivity(intent);
+        }));
 
         // 获得电脑屏幕
         view.findViewById(R.id.showPcScreenBtn).setOnClickListener(v -> NavHostFragment.findNavController(FirstFragment.this)

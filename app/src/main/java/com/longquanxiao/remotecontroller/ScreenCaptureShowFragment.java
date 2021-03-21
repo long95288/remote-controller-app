@@ -206,7 +206,7 @@ public class ScreenCaptureShowFragment extends Fragment {
                         handler.sendMessage(message);
                     }
                     // 30fps => 1000 / 30 =>
-                    Thread.sleep(20);
+                    Thread.sleep(10);
                     socket.close();
                 }catch (Exception e) {
                     e.printStackTrace();
