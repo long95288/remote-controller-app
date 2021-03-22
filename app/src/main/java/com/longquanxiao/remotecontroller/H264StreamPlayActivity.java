@@ -12,11 +12,12 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Button;
 
+import com.longquanxiao.remotecontroller.manager.DecodeH264Stream;
 import com.longquanxiao.remotecontroller.manager.DecoderManager;
 
-public class H264StreamPlay extends AppCompatActivity {
+public class H264StreamPlayActivity extends AppCompatActivity {
 
-    private static final String TAG = H264StreamPlay.class.getSimpleName();
+    private static final String TAG = H264StreamPlayActivity.class.getSimpleName();
 
     private static final int INIT_MANAGER_MSG = 0x01;
 
@@ -53,17 +54,16 @@ public class H264StreamPlay extends AppCompatActivity {
                 public void surfaceCreated(SurfaceHolder holder) {
                     mHandler.sendEmptyMessageDelayed(INIT_MANAGER_MSG, INIT_MANAGER_DELAY);
                 }
-
                 @Override
                 public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 
                 }
-
                 @Override
                 public void surfaceDestroyed(SurfaceHolder holder) {
-
                 }
             });
+        }else{
+            System.out.println("Surface is NULL");
         }
 
     }
@@ -76,9 +76,13 @@ public class H264StreamPlay extends AppCompatActivity {
         }
     }
 
+
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        DecodeH264Stream.getInstance().exitDecoder = true;
+        DecodeH264Stream.getInstance().close();
         Log.d(TAG, "onDestroy..");
     }
 

@@ -125,7 +125,7 @@ public class FirstFragment extends Fragment {
         {
             Intent intent = new Intent();
             intent.putExtra("isPlayH264", true);
-            intent.setClass(this.getActivity(), H264StreamPlay.class);
+            intent.setClass(this.getActivity(), H264StreamPlayActivity.class);
             startActivity(intent);
         }));
 

@@ -50,7 +50,7 @@ public class NetTool {
                 if (!findServerIP.equals(localIpv4)){
                     try {
                         udpSocket.send(new DatagramPacket("123".getBytes(), "123".length(), InetAddress.getByName(findServerIP), serverPort));
-                        System.out.println("探测:"+ findServerIP);
+                        // System.out.println("探测:"+ findServerIP);
                     }catch (Exception e){
                         e.printStackTrace();
                     }
@@ -59,11 +59,11 @@ public class NetTool {
             // 接收数据
             for(int i = 0;i < 255;i ++) {
                 byte[] recieveData = new byte[1024];
-                System.out.println("等待响应");
+                // System.out.println("等待响应");
                 DatagramPacket receivePacket = new DatagramPacket(recieveData, recieveData.length);
                 udpSocket.receive(receivePacket);
                 String receiveStr =  new String(recieveData).substring(0, receivePacket.getLength());
-                System.out.println("收到响应:"+ receiveStr);
+                // System.out.println("收到响应:"+ receiveStr);
                 // 收到数据,读取出
                 if ("321".equals(receiveStr)) {
                     // 是服务器响应,取出这个packet的IP和PORT

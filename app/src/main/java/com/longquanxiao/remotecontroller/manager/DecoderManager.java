@@ -11,7 +11,7 @@ import android.view.Surface;
 
 import androidx.annotation.RequiresApi;
 
-import com.longquanxiao.remotecontroller.H264StreamPlay;
+import com.longquanxiao.remotecontroller.H264StreamPlayActivity;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -49,11 +49,31 @@ public class DecoderManager {
             e.printStackTrace();
         }
 
-        Surface surface = H264StreamPlay.getSurface();
+        Surface surface = H264StreamPlayActivity.getSurface();
         mediaCodec.configure(mediaFormat, surface, null, 0);
         mediaCodec.start();
     }
 
+    public boolean OnFrame(byte[] buf, int offset, int length, long startTime) {
+        ByteBuffer[] inputBuffers = mediaCodec.getInputBuffers();
+        int inputBufferIndex = mediaCodec.dequeueInputBuffer(-1);
+        if (inputBufferIndex >= 0) {
+            ByteBuffer inputBuffer = inputBuffers[inputBufferIndex];
+            inputBuffer.clear();
+            inputBuffer.put(buf, offset, length);
+            long time = (System.nanoTime() - startTime) / 1000;
+            mediaCodec.queueInputBuffer(inputBufferIndex, 0, length, time, 0);
+        }else{
+            return false;
+        }
+        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+        int outputBufferIndex = mediaCodec.dequeueOutputBuffer(bufferInfo, 100);
+        while (outputBufferIndex >= 0) {
+            mediaCodec.releaseOutputBuffer(outputBufferIndex, true);
+            outputBufferIndex =mediaCodec.dequeueOutputBuffer(bufferInfo, 0);
+        }
+        return true;
+    }
     /**
      * Play the MP4 file Thread
      */
@@ -102,6 +122,21 @@ public class DecoderManager {
         public void run() {
             super.run();
             long startTime = System.nanoTime();
+            while(!isDecodeFinish)
+            {
+                byte[] buf = DecodeH264Stream.getInstance().getNALU();
+                try {
+                    if (null != buf) {
+                        boolean out = OnFrame(buf, 0, buf.length, startTime);
+                        System.out.println("OnFrame out " + out);
+                    }else{
+                        Thread.sleep(30);
+                    }
+                }catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+//            long startTime = System.nanoTime();
             while (!isDecodeFinish) {
                 if (mediaCodec != null) {
                     int inputIndex = mediaCodec.dequeueInputBuffer(-1);
