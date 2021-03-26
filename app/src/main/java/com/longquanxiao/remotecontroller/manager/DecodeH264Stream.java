@@ -102,7 +102,8 @@ public class DecodeH264Stream {
         new Thread(() -> {
             try {
                 String ip = RCTLCore.getInstance().getServerIP();
-//                ip = "192.168.0.2";
+                System.out.println("开启数据接收线程");
+                ip = "192.168.0.2";
                 int port = 1402;
                 Socket socket = new Socket(ip, port);
                 inputStream = new BufferedInputStream(socket.getInputStream());
@@ -125,6 +126,7 @@ public class DecodeH264Stream {
         }).start();
 
         // 切割NALU线程
+        /*
         new Thread(() -> {
             while(!exitDecoder) {
                 try {
@@ -174,8 +176,22 @@ public class DecodeH264Stream {
             }
             System.out.println("结束解析线程");
         }).start();
+         */
     }
 
+    public byte[] readData(int size) {
+        byte[] buf = readFromBufferAndRemove(size);
+        while (null == buf) {
+            try{
+                Thread.sleep(30);
+            }catch (Exception e) {
+                e.printStackTrace();
+                break;
+            }
+        }
+        System.out.println("返回数据....");
+        return buf;
+    }
     /**
      * 读取每一帧数据
      *

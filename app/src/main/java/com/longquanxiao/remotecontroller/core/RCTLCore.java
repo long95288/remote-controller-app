@@ -5,16 +5,27 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 
 class RCTLConnetion {
@@ -122,19 +133,96 @@ class RCTLConnetion {
         }
     }
 }
+
+
+interface FileUploadStatusCallBackInterface {
+    void report_status(int id, int status, String msg);
+    void report_process(int id, int uploadSize);
+}
+/**
+ * 文件上传线程,每个上传线程有一个ID,完成/失败/进度都会回调回去
+ */
+class FileUploadThread extends Thread {
+    public static final int UPLOAD_FINISH = 1;
+    public static final int UPLOAD_FAILED = 2;
+    public static final int UPLOAD_DOING = 3;
+
+    String uploadFilename;
+    int uploadId;
+    int uploadStatus;
+    FileUploadStatusCallBackInterface callBack = null;
+
+    public FileUploadThread(String uploadFilePath, int uploadId, FileUploadStatusCallBackInterface callBack) {
+        this.uploadFilename = uploadFilePath;
+        this.uploadId = uploadId;
+        this.callBack = callBack;
+    }
+
+    @Override
+    public void run() {
+        super.run();
+        // 创建Http连接,发送文件
+        try {
+            if (RCTLCore.RCTLCORE_STATUS_RUNNING == RCTLCore.getInstance().getRCTLCoreStatus()){
+                OkHttpClient client = new OkHttpClient();
+                String ip = RCTLCore.getInstance().getServerIP();
+                int port = RCTLCore.getInstance().getServerPort();
+                String url = "http://"+ip+":" + port + "/file";
+                File file = new File(uploadFilename);
+                RequestBody filebody = RequestBody.create(MediaType.parse("application/octet-stream"), file);
+                MultipartBody body = new MultipartBody.Builder()
+                        .setType(MediaType.parse("multipart/form-data"))
+                        .addFormDataPart("file", file.getName(), filebody)
+                        .build();
+                Request request= new Request.Builder()
+                        .url(url)
+                        .post(body)
+                        .build();
+                Call call = client.newCall(request);
+                call.enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        callBack.report_status(uploadId, UPLOAD_FAILED, e.getMessage());
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        callBack.report_status(uploadId, UPLOAD_FINISH, "上传完成");
+                    }
+                });
+            }else{
+                callBack.report_status(uploadId, UPLOAD_FAILED, "RCTCore is not running");
+            }
+        }catch (Exception e) {
+
+        }
+    }
+
+}
 /**
  * 核心类,单例
  */
-public class RCTLCore {
+public class RCTLCore implements FileUploadStatusCallBackInterface {
     private static RCTLCore RCTLCore = null;
+
+    public static final int RCTLCORE_STATUS_RUNNING = 1;
+    public static final int RCTLCORE_STATUS_STOP = 2;
+
+    private int coreStatus = RCTLCORE_STATUS_STOP;
+
     private boolean start = false;
     private String serverIP = null;
     private int serverPort = 1399;
     private List<RCTLConnetion> connetionList = null;
     private Handler uiHandler = null;
 
+    private List<FileUploadThread> uploadFileThreadList = null;
+    private Map<Integer, Integer> uploadFileStatusMap = null;
+
     private RCTLCore() {
         connetionList = new LinkedList<>();
+        uploadFileThreadList = new LinkedList<>();
+        uploadFileStatusMap = new HashMap<>();
         // init();
     }
     private void insertMessage(String s) {
@@ -179,6 +267,7 @@ public class RCTLCore {
 
     public void setServerIP(String serverIP) {
         insertMessage("Core设置IP:"+serverIP);
+        coreStatus = RCTLCORE_STATUS_RUNNING;
         this.serverIP = serverIP;
     }
 
@@ -233,5 +322,26 @@ public class RCTLCore {
 
     public void setUiHandler(Handler uiHandler) {
         this.uiHandler = uiHandler;
+    }
+
+    public int getRCTLCoreStatus(){
+        return this.coreStatus;
+    }
+
+    public void addFileUploadTask(int taskId, String filepath) {
+        FileUploadThread task = new FileUploadThread(filepath, taskId, this);
+        uploadFileThreadList.add(task);
+        uploadFileStatusMap.put(taskId, FileUploadThread.UPLOAD_DOING);
+        task.start();
+    }
+
+    @Override
+    public void report_status(int id, int status, String msg) {
+        uploadFileStatusMap.put(id, status);
+    }
+
+    @Override
+    public void report_process(int id, int uploadSize) {
+
     }
 }

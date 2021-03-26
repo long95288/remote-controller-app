@@ -1,5 +1,6 @@
 package com.longquanxiao.remotecontroller;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -25,6 +26,11 @@ public class MainActivity extends AppCompatActivity {
                 .setAction("Action", null).show());
 //        // 设置背景图片
 //        getWindow().setBackgroundDrawableResource(R.drawable.bg);
+        findViewById(R.id.goToFileTransferActivityBtn).setOnClickListener((v) -> {
+            Intent intent = new Intent();
+            intent.setClass(this, FileTransferActivity.class);
+            startActivity(intent);
+        });
     }
 
     @Override
