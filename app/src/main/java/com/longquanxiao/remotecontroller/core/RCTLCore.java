@@ -5,7 +5,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
-import java.io.File;
+import com.longquanxiao.remotecontroller.utils.FileUploadThreadCallBackInterface;
+import com.longquanxiao.remotecontroller.utils.FileUploadThread;
+import com.longquanxiao.remotecontroller.utils.SendMsgCallbackInterface;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,14 +21,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import static com.longquanxiao.remotecontroller.utils.FileUploadThread.UPLOAD_FAILED;
 
 
 class RCTLConnetion {
@@ -135,75 +131,14 @@ class RCTLConnetion {
 }
 
 
-interface FileUploadStatusCallBackInterface {
-    void report_status(int id, int status, String msg);
-    void report_process(int id, int uploadSize);
-}
-/**
- * 文件上传线程,每个上传线程有一个ID,完成/失败/进度都会回调回去
- */
-class FileUploadThread extends Thread {
-    public static final int UPLOAD_FINISH = 1;
-    public static final int UPLOAD_FAILED = 2;
-    public static final int UPLOAD_DOING = 3;
 
-    String uploadFilename;
-    int uploadId;
-    int uploadStatus;
-    FileUploadStatusCallBackInterface callBack = null;
 
-    public FileUploadThread(String uploadFilePath, int uploadId, FileUploadStatusCallBackInterface callBack) {
-        this.uploadFilename = uploadFilePath;
-        this.uploadId = uploadId;
-        this.callBack = callBack;
-    }
-
-    @Override
-    public void run() {
-        super.run();
-        // 创建Http连接,发送文件
-        try {
-            if (RCTLCore.RCTLCORE_STATUS_RUNNING == RCTLCore.getInstance().getRCTLCoreStatus()){
-                OkHttpClient client = new OkHttpClient();
-                String ip = RCTLCore.getInstance().getServerIP();
-                int port = RCTLCore.getInstance().getServerPort();
-                String url = "http://"+ip+":" + port + "/file";
-                File file = new File(uploadFilename);
-                RequestBody filebody = RequestBody.create(MediaType.parse("application/octet-stream"), file);
-                MultipartBody body = new MultipartBody.Builder()
-                        .setType(MediaType.parse("multipart/form-data"))
-                        .addFormDataPart("file", file.getName(), filebody)
-                        .build();
-                Request request= new Request.Builder()
-                        .url(url)
-                        .post(body)
-                        .build();
-                Call call = client.newCall(request);
-                call.enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        callBack.report_status(uploadId, UPLOAD_FAILED, e.getMessage());
-                    }
-
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        callBack.report_status(uploadId, UPLOAD_FINISH, "上传完成");
-                    }
-                });
-            }else{
-                callBack.report_status(uploadId, UPLOAD_FAILED, "RCTCore is not running");
-            }
-        }catch (Exception e) {
-
-        }
-    }
-
-}
 /**
  * 核心类,单例
  */
-public class RCTLCore implements FileUploadStatusCallBackInterface {
+public class RCTLCore {
     private static RCTLCore RCTLCore = null;
+    private static String fileUploadServiceURLFormat = "http://%s:%d/file";
 
     public static final int RCTLCORE_STATUS_RUNNING = 1;
     public static final int RCTLCORE_STATUS_STOP = 2;
@@ -218,6 +153,8 @@ public class RCTLCore implements FileUploadStatusCallBackInterface {
 
     private List<FileUploadThread> uploadFileThreadList = null;
     private Map<Integer, Integer> uploadFileStatusMap = null;
+
+    FileUploadThreadCallBackInterface fileUploadThreadCallBack = null;
 
     private RCTLCore() {
         connetionList = new LinkedList<>();
@@ -279,6 +216,17 @@ public class RCTLCore implements FileUploadStatusCallBackInterface {
         this.serverPort = serverPort;
     }
 
+    /**
+     * 获得文件上传的URL
+     * @return url
+     */
+    public String getFileUploadURL() {
+        if (coreStatus == RCTLCORE_STATUS_RUNNING) {
+            return String.format(fileUploadServiceURLFormat, this.serverIP, this.serverPort);
+        }
+        return null;
+    }
+
     /*
     * 初始化,完成如下功能
     * 1、登录平台
@@ -328,20 +276,21 @@ public class RCTLCore implements FileUploadStatusCallBackInterface {
         return this.coreStatus;
     }
 
-    public void addFileUploadTask(int taskId, String filepath) {
-        FileUploadThread task = new FileUploadThread(filepath, taskId, this);
-        uploadFileThreadList.add(task);
-        uploadFileStatusMap.put(taskId, FileUploadThread.UPLOAD_DOING);
+    public void addFileUploadTask(int taskId, String filepath, FileUploadThreadCallBackInterface fileUploadThreadCallBack) {
+        FileUploadThread task = new FileUploadThread(filepath, taskId,fileUploadThreadCallBack);
+        if(null == task && null != fileUploadThreadCallBack) {
+            fileUploadThreadCallBack.reportStatus(taskId, UPLOAD_FAILED, "Create new FileUploadThread failed.");
+            return;
+        }
         task.start();
     }
 
-    @Override
-    public void report_status(int id, int status, String msg) {
-        uploadFileStatusMap.put(id, status);
-    }
+    public void sendMsg(String msg, SendMsgCallbackInterface callback) {
+        // 发送HTTP请求
 
-    @Override
-    public void report_process(int id, int uploadSize) {
-
+        // 处理回调
+        if (null != callback) {
+            callback.sendMsgStatusCallBack(1, "Send Success");
+        }
     }
 }

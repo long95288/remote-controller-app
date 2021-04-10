@@ -22,17 +22,6 @@ import com.longquanxiao.remotecontroller.cmd.RemoteControlCMD;
 import com.longquanxiao.remotecontroller.core.RCTLCore;
 import com.longquanxiao.remotecontroller.utils.NetTool;
 
-class ResponseStatus {
-    String message;
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-}
 
 public class FirstFragment extends Fragment {
     TextView statusView = null;
@@ -128,6 +117,12 @@ public class FirstFragment extends Fragment {
             intent.setClass(this.getActivity(), H264StreamPlayActivity.class);
             startActivity(intent);
         }));
+
+        view.findViewById(R.id.goToFileTransferActivityBtn).setOnClickListener((v) -> {
+            Intent intent = new Intent();
+            intent.setClass(this.getActivity(), FileTransferActivity.class);
+            startActivity(intent);
+        });
 
         // 获得电脑屏幕
         view.findViewById(R.id.showPcScreenBtn).setOnClickListener(v -> NavHostFragment.findNavController(FirstFragment.this)

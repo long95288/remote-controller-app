@@ -7,6 +7,16 @@
     android:alpha="200"
     tools:context=".FirstFragment">
 
+    <Button
+        android:id="@+id/goToFileTransferActivityBtn"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
+        android:text="文件管理"
+        app:layout_constraintBottom_toTopOf="@+id/showPcScreenBtn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/shutdownBtn" />
+
     <EditText
         android:id="@+id/localIPEditText"
         android:layout_width="wrap_content"
@@ -22,10 +32,8 @@
 
     <Button
         android:id="@+id/button_first"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="116dp"
-        android:layout_marginLeft="116dp"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
         android:cursorVisible="false"
         android:text="@string/next"
         android:visibility="visible"
@@ -35,25 +43,23 @@
 
     <Button
         android:id="@+id/shutdownBtn"
-        android:layout_width="300dp"
-        android:layout_height="48dp"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
         android:text="关闭电脑"
         app:layout_constraintBottom_toTopOf="@+id/button_first"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/cancelShutdownBtn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/statusText" />
 
     <Button
         android:id="@+id/cancelShutdownBtn"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
         android:text="取消关闭电脑"
         app:layout_constraintBottom_toTopOf="@+id/button_first"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.477"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/shutdownBtn"
-        app:layout_constraintVertical_bias="0.273" />
+        app:layout_constraintStart_toEndOf="@+id/shutdownBtn"
+        app:layout_constraintTop_toBottomOf="@+id/statusText" />
 
     <TextView
         android:id="@+id/statusText"
@@ -147,13 +153,8 @@
 
     <Button
         android:id="@+id/showPcScreenBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="33dp"
-        android:layout_marginLeft="33dp"
-        android:layout_marginEnd="36dp"
-        android:layout_marginRight="36dp"
-        android:layout_marginBottom="4dp"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
         android:text="显示电脑屏幕"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/button_first"
