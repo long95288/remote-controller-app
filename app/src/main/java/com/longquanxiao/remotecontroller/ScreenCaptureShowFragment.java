@@ -143,59 +143,59 @@ public class ScreenCaptureShowFragment extends Fragment {
 //        if (null != context) {
 //            ImageViewUtil.matchAll(context, imageView);
 //        }
-//        screenCaptureThread = new ComputerScreenCaptureThread(new ComputerScreenCaptureThreadInterface() {
-//            @Override
-//            public void screenCaptureImageData(byte[] data) {
-//                // 接收图片数据,渲染到图片区
-//                // Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-//                Bitmap bitmap = BitmapFactory.decodeStream(new ByteArrayInputStream(data));
-//                try {
-//                    Message message = new Message();
-//                    message.obj = RoundedBitmapDrawableFactory.create(getResources(), bitmap);
-//                    message.what = 233;
-//                    if (null != handler){
-//                        handler.sendMessage(message);
-//                    }
-//                }catch (Exception e) {
-//                    e.printStackTrace();
-//                    screenCaptureThread.stopThread();
-//                }
-//            }
-//
-//            @Override
-//            public void screenCaptureStatus(int status, String msg) {
-//                if (status == ComputerScreenCaptureThread.PC_SCREEN_CAPTURE_STOP) {
-//                    Log.d(TAG, "screenCaptureStatus: msg" + msg);
-//                }
-//            }
-//        });
-//        screenCaptureThread.start();
-
-        view.post(() -> new Thread(() -> {
-            System.out.println("开始显示电脑屏幕图像");
-            String ip = RCTLCore.getInstance().getServerIP();
-            int port = 1401;
-            while (isViewed) {
+        screenCaptureThread = new ComputerScreenCaptureThread(new ComputerScreenCaptureThreadInterface() {
+            @Override
+            public void screenCaptureImageData(byte[] data) {
+                // 接收图片数据,渲染到图片区
+                // Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+                Bitmap bitmap = BitmapFactory.decodeStream(new ByteArrayInputStream(data));
                 try {
-                    Socket socket = new Socket(ip, port);
-                    BufferedInputStream input = new BufferedInputStream(socket.getInputStream());
-                    Bitmap bitmap = BitmapFactory.decodeStream(input);
-                    if (isViewed) {
-                        RoundedBitmapDrawable bg = RoundedBitmapDrawableFactory.create(getResources(), bitmap);
-                        Message message = new Message();
-                        message.obj = bg;
-                        message.what = 233;
+                    Message message = new Message();
+                    message.obj = RoundedBitmapDrawableFactory.create(getResources(), bitmap);
+                    message.what = 233;
+                    if (null != handler){
                         handler.sendMessage(message);
                     }
-                    // 30fps => 1000 / 30 =>
-                    Thread.sleep(10);
-                    socket.close();
                 }catch (Exception e) {
                     e.printStackTrace();
+                    screenCaptureThread.stopThread();
                 }
             }
-            System.out.println("结束观看.....");
-        }).start());
+
+            @Override
+            public void screenCaptureStatus(int status, String msg) {
+                if (status == ComputerScreenCaptureThread.PC_SCREEN_CAPTURE_STOP) {
+                    Log.d(TAG, "screenCaptureStatus: msg" + msg);
+                }
+            }
+        });
+        screenCaptureThread.start();
+
+//        view.post(() -> new Thread(() -> {
+//            System.out.println("开始显示电脑屏幕图像");
+//            String ip = RCTLCore.getInstance().getServerIP();
+//            int port = 1401;
+//            while (isViewed) {
+//                try {
+//                    Socket socket = new Socket(ip, port);
+//                    BufferedInputStream input = new BufferedInputStream(socket.getInputStream());
+//                    Bitmap bitmap = BitmapFactory.decodeStream(input);
+//                    if (isViewed) {
+//                        RoundedBitmapDrawable bg = RoundedBitmapDrawableFactory.create(getResources(), bitmap);
+//                        Message message = new Message();
+//                        message.obj = bg;
+//                        message.what = 233;
+//                        handler.sendMessage(message);
+//                    }
+//                    // 30fps => 1000 / 30 =>
+//                    Thread.sleep(10);
+//                    socket.close();
+//                }catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//            System.out.println("结束观看.....");
+//        }).start());
     }
 
 
