@@ -1,12 +1,7 @@
 package com.longquanxiao.remotecontroller;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
-import android.graphics.Matrix;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -16,21 +11,23 @@ import androidx.fragment.app.Fragment;
 
 import android.os.Handler;
 import android.os.Message;
-import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.graphics.Bitmap;
-import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import com.longquanxiao.remotecontroller.core.RCTLCore;
-import com.longquanxiao.remotecontroller.utils.NetTool;
+import com.longquanxiao.remotecontroller.utils.ComputerScreenCaptureThread;
+import com.longquanxiao.remotecontroller.utils.ComputerScreenCaptureThreadInterface;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.Socket;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -42,6 +39,7 @@ import java.net.Socket;
 public class ScreenCaptureShowFragment extends Fragment {
     ImageView imageView = null;
     private final Handler handler;
+    ComputerScreenCaptureThread screenCaptureThread;
     private boolean isViewed = false;
     {
         handler = new Handler() {
@@ -145,6 +143,34 @@ public class ScreenCaptureShowFragment extends Fragment {
 //        if (null != context) {
 //            ImageViewUtil.matchAll(context, imageView);
 //        }
+//        screenCaptureThread = new ComputerScreenCaptureThread(new ComputerScreenCaptureThreadInterface() {
+//            @Override
+//            public void screenCaptureImageData(byte[] data) {
+//                // 接收图片数据,渲染到图片区
+//                // Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+//                Bitmap bitmap = BitmapFactory.decodeStream(new ByteArrayInputStream(data));
+//                try {
+//                    Message message = new Message();
+//                    message.obj = RoundedBitmapDrawableFactory.create(getResources(), bitmap);
+//                    message.what = 233;
+//                    if (null != handler){
+//                        handler.sendMessage(message);
+//                    }
+//                }catch (Exception e) {
+//                    e.printStackTrace();
+//                    screenCaptureThread.stopThread();
+//                }
+//            }
+//
+//            @Override
+//            public void screenCaptureStatus(int status, String msg) {
+//                if (status == ComputerScreenCaptureThread.PC_SCREEN_CAPTURE_STOP) {
+//                    Log.d(TAG, "screenCaptureStatus: msg" + msg);
+//                }
+//            }
+//        });
+//        screenCaptureThread.start();
+
         view.post(() -> new Thread(() -> {
             System.out.println("开始显示电脑屏幕图像");
             String ip = RCTLCore.getInstance().getServerIP();
@@ -178,6 +204,9 @@ public class ScreenCaptureShowFragment extends Fragment {
     public void onDestroyView() {
         System.out.println("退出观看界面。。。。");
         isViewed = false;
+        if (null != screenCaptureThread) {
+            screenCaptureThread.stopThread();
+        }
         super.onDestroyView();
     }
 }
