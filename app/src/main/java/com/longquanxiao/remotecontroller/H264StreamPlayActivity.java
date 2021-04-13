@@ -1,5 +1,6 @@
 package com.longquanxiao.remotecontroller;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -22,6 +23,7 @@ import android.widget.Toast;
 import com.longquanxiao.remotecontroller.core.RCTLCore;
 import com.longquanxiao.remotecontroller.manager.DecodeH264Stream;
 import com.longquanxiao.remotecontroller.manager.DecoderManager;
+import com.longquanxiao.remotecontroller.utils.H264Player;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -61,6 +63,7 @@ public class H264StreamPlayActivity extends AppCompatActivity {
     private static final int VIDEO_HEIGHT = 1088;
     private int FrameRate = 15;
     private Boolean UseSPSandPPS = false;
+    private H264Player h264Player;
     private String filePath = Environment.getExternalStorageDirectory() + "/" + FileName;
 
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
@@ -75,8 +78,9 @@ public class H264StreamPlayActivity extends AppCompatActivity {
         surfaceView = findViewById(R.id.surfaceview);
         mEndBtn = findViewById(R.id.end);
         mEndBtn.setOnClickListener((v) -> {
-            DecoderManager.getInstance().close();
+            // DecoderManager.getInstance().close();
             // finish();
+            h264Player.stopPlay();
         });
 
         // Check if we have write permission
@@ -91,69 +95,93 @@ public class H264StreamPlayActivity extends AppCompatActivity {
 
 
     private void initSurface() {
-        File f = new File(filePath);
-        if (null == f || !f.exists() || f.length() == 0) {
-            Toast.makeText(this, "视频文件不存在", Toast.LENGTH_LONG).show();
-            return;
-        }
-        try {
-            //获取文件输入流
-            mInputStream = new DataInputStream(new FileInputStream(new File(filePath)));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            try {
-                mInputStream.close();
-            } catch (IOException e1) {
-                e1.printStackTrace();
+        final SurfaceHolder surfaceHolder = surfaceView.getHolder();
+        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                h264Player = new H264Player(
+                        H264StreamPlayActivity.this,
+                        filePath,
+                        surfaceHolder.getSurface()
+                );
+                h264Player.play();
             }
-        }
 
-        if (null != surfaceView) {
-            mSurfaceHolder = surfaceView.getHolder();
-            mSurfaceHolder.addCallback(new SurfaceHolder.Callback() {
-                @Override
-                public void surfaceCreated(SurfaceHolder holder) {
-//                    mHandler.sendEmptyMessageDelayed(INIT_MANAGER_MSG, INIT_MANAGER_DELAY);
-                    try
-                    {
-                        //通过多媒体格式名创建一个可用的解码器
-                        mCodec = MediaCodec.createDecoderByType("video/avc");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    //初始化编码器
-                    final MediaFormat mediaformat = MediaFormat.createVideoFormat("video/avc", VIDEO_WIDTH, VIDEO_HEIGHT);
-                    //获取h264中的pps及sps数据
-                    if (UseSPSandPPS) {
-                        byte[] header_sps = {0, 0, 0, 1, 103, 66, 0, 42, (byte) 149, (byte) 168, 30, 0, (byte) 137, (byte) 249, 102, (byte) 224, 32, 32, 32, 64};
-                        byte[] header_pps = {0, 0, 0, 1, 104, (byte) 206, 60, (byte) 128, 0, 0, 0, 1, 6, (byte) 229, 1, (byte) 151, (byte) 128};
-                        mediaformat.setByteBuffer("csd-0", ByteBuffer.wrap(header_sps));
-                        mediaformat.setByteBuffer("csd-1", ByteBuffer.wrap(header_pps));
-                    }
-                    //设置帧率
-                    mediaformat.setInteger(MediaFormat.KEY_FRAME_RATE, FrameRate);
-                    //https://developer.android.com/reference/android/media/MediaFormat.html#KEY_MAX_INPUT_SIZE
-                    //设置配置参数，参数介绍 ：
-                    // format	如果为解码器，此处表示输入数据的格式；如果为编码器，此处表示输出数据的格式。
-                    //surface	指定一个surface，可用作decode的输出渲染。
-                    //crypto	如果需要给媒体数据加密，此处指定一个crypto类.
-                    //   flags	如果正在配置的对象是用作编码器，此处加上CONFIGURE_FLAG_ENCODE 标签。
-                    mCodec.configure(mediaformat, holder.getSurface(), null, 0);
-                    startDecodingThread();
-                }
-                @Override
-                public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            @Override
+            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
 
-                }
-                @Override
-                public void surfaceDestroyed(SurfaceHolder holder) {
-                    mCodec.stop();
-                    mCodec.release();
-                }
-            });
-        }else{
-            System.out.println("Surface is NULL");
-        }
+            }
+
+            @Override
+            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+
+            }
+        });
+
+
+//        File f = new File(filePath);
+//        if (null == f || !f.exists() || f.length() == 0) {
+//            Toast.makeText(this, "视频文件不存在", Toast.LENGTH_LONG).show();
+//            return;
+//        }
+//        try {
+//            //获取文件输入流
+//            mInputStream = new DataInputStream(new FileInputStream(new File(filePath)));
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//            try {
+//                mInputStream.close();
+//            } catch (IOException e1) {
+//                e1.printStackTrace();
+//            }
+//        }
+//
+//        if (null != surfaceView) {
+//            mSurfaceHolder = surfaceView.getHolder();
+//            mSurfaceHolder.addCallback(new SurfaceHolder.Callback() {
+//                @Override
+//                public void surfaceCreated(SurfaceHolder holder) {
+////                    mHandler.sendEmptyMessageDelayed(INIT_MANAGER_MSG, INIT_MANAGER_DELAY);
+//                    try
+//                    {
+//                        //通过多媒体格式名创建一个可用的解码器
+//                        mCodec = MediaCodec.createDecoderByType("video/avc");
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                    //初始化编码器
+//                    final MediaFormat mediaformat = MediaFormat.createVideoFormat("video/avc", VIDEO_WIDTH, VIDEO_HEIGHT);
+//                    //获取h264中的pps及sps数据
+//                    if (UseSPSandPPS) {
+//                        byte[] header_sps = {0, 0, 0, 1, 103, 66, 0, 42, (byte) 149, (byte) 168, 30, 0, (byte) 137, (byte) 249, 102, (byte) 224, 32, 32, 32, 64};
+//                        byte[] header_pps = {0, 0, 0, 1, 104, (byte) 206, 60, (byte) 128, 0, 0, 0, 1, 6, (byte) 229, 1, (byte) 151, (byte) 128};
+//                        mediaformat.setByteBuffer("csd-0", ByteBuffer.wrap(header_sps));
+//                        mediaformat.setByteBuffer("csd-1", ByteBuffer.wrap(header_pps));
+//                    }
+//                    //设置帧率
+//                    mediaformat.setInteger(MediaFormat.KEY_FRAME_RATE, FrameRate);
+//                    //https://developer.android.com/reference/android/media/MediaFormat.html#KEY_MAX_INPUT_SIZE
+//                    //设置配置参数，参数介绍 ：
+//                    // format	如果为解码器，此处表示输入数据的格式；如果为编码器，此处表示输出数据的格式。
+//                    //surface	指定一个surface，可用作decode的输出渲染。
+//                    //crypto	如果需要给媒体数据加密，此处指定一个crypto类.
+//                    //   flags	如果正在配置的对象是用作编码器，此处加上CONFIGURE_FLAG_ENCODE 标签。
+//                    mCodec.configure(mediaformat, holder.getSurface(), null, 0);
+//                    startDecodingThread();
+//                }
+//                @Override
+//                public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+//
+//                }
+//                @Override
+//                public void surfaceDestroyed(SurfaceHolder holder) {
+//                    mCodec.stop();
+//                    mCodec.release();
+//                }
+//            });
+//        }else{
+//            System.out.println("Surface is NULL");
+//        }
 
     }
     private void startDecodingThread() {
@@ -324,6 +352,7 @@ public class H264StreamPlayActivity extends AppCompatActivity {
 //        DecodeH264Stream.getInstance().exitDecoder = true;
 //        DecodeH264Stream.getInstance().close();
         Log.d(TAG, "onDestroy..");
+        h264Player.stopPlay();
     }
 
     public static Surface getSurface() {
