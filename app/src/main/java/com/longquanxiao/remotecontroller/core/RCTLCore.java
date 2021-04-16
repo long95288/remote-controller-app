@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
+import com.longquanxiao.remotecontroller.cmd.RemoteControlCMD;
 import com.longquanxiao.remotecontroller.utils.FileUploadThreadCallBackInterface;
 import com.longquanxiao.remotecontroller.utils.FileUploadThread;
 import com.longquanxiao.remotecontroller.utils.SendMsgCallbackInterface;
@@ -175,10 +176,20 @@ public class RCTLCore {
 
     public void sendMsg(String msg, SendMsgCallbackInterface callback) {
         // 发送HTTP请求
-
-        // 处理回调
-        if (null != callback) {
-            callback.sendMsgStatusCallBack(1, "Send Success");
-        }
+        new Thread(() -> {
+            try {
+                if (RemoteControlCMD.sendMsg(msg)) {
+                    // 处理回调
+                    if (null != callback) {
+                        callback.sendMsgStatusCallBack(1, "Send Success");
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (null != callback) {
+                    callback.sendMsgStatusCallBack(2, e.getMessage());
+                }
+            }
+        }).start();
     }
 }

@@ -2,12 +2,10 @@ package com.longquanxiao.remotecontroller.utils;
 
 import android.content.Context;
 import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.util.Log;
 import android.view.Surface;
-import android.view.SurfaceView;
 
 import androidx.annotation.RequiresApi;
 
@@ -24,37 +22,101 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static android.content.ContentValues.TAG;
 
-public class H264Player extends Thread {
+public class H264Player {
     private String path;
     private MediaCodec mediaCodec;
     private H264StreamPullThread pullThread;
     private ByteArrayOutputStream buffer;
     private Surface surface;
+    private String mimeType = "video/avc";
+    private int width;
+    private int height;
+    private MediaCodec.BufferInfo mediaCodecBufferInfo = null;
     boolean isExit = false;
     private Lock lock;
+    private volatile boolean isViewed;
+    private Thread inputThread;
+    private Thread outputThread;
 
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public H264Player(Context context, String path, Surface surface){
         lock = new ReentrantLock();
         this.path = path;
+        width = 128;
+        height = 128;
+        mediaCodecBufferInfo = new MediaCodec.BufferInfo();
+        isViewed = false;
         try {
-            mediaCodec = MediaCodec.createDecoderByType("video/avc");
+            mediaCodec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+            MediaFormat mediaFormat = MediaFormat.createVideoFormat( mimeType, width, height);
+            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
+            // 需要页面绘制完成才能进行config
+            mediaCodec.configure(mediaFormat, surface, null, 0);
         }catch (IOException e) {
             e.printStackTrace();
         }
-        MediaFormat mediaFormat = MediaFormat.createVideoFormat(
-                "video/avc", 1920, 1080
-        );
-        mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
-        mediaCodec.configure(mediaFormat, surface, null, 0);
     }
 
     public void play() {
         mediaCodec.start();
-        new Thread(this).start();
+        inputThread = new Thread(()->{
+            pullThread = new H264StreamPullThread(new H264StreamPullThreadCallbackInterface() {
+                @Override
+                public void reportStatus(int status, String msg) {
+                    if (status == H264StreamPullThread.STOP || status == H264StreamPullThread.FAILED){
+                        Log.d(TAG, "reportStatus: " + msg);
+                        isExit = true;
+                    }
+                }
+
+                @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+                @Override
+                public void receiveH264Data(byte[] data, int size) {
+                    Log.d(TAG, "receiveH264Data: " + size);
+                    try {
+                        ByteBuffer[] inputBuffers = mediaCodec.getInputBuffers();
+                        int inputBufferIndex = mediaCodec.dequeueInputBuffer(0);
+                        if (inputBufferIndex >= 0) {
+                            ByteBuffer inputBuffer = mediaCodec.getInputBuffer(inputBufferIndex);
+                            inputBuffer.put(data, 0, size);
+                            mediaCodec.queueInputBuffer(inputBufferIndex, 0, size,0, 0);
+                        }
+                    }catch (Exception e) {
+                        Log.d(TAG, "receiveH264Data: "+e.getMessage());
+                    }
+                }
+            });
+            pullThread.start();
+        });
+        inputThread.start();
+
+        outputThread = new Thread(() -> {
+            while (!isExit){
+                try{
+                    int outIndex = mediaCodec.dequeueOutputBuffer(mediaCodecBufferInfo, 300 * 1000);
+                    if (outIndex < 0) {
+                        Log.d(TAG, "decodeFrame: dequeueOutputBuffer Timeout");
+                        continue;
+                    }
+                    // 解码后的数据,一般自己做中间件处理的时候才会使用这个
+//        ByteBuffer byteBuffer = mediaCodec.getOutputBuffer(outIndex);
+                    // 直接渲染到surface
+                    mediaCodec.releaseOutputBuffer(outIndex, true);
+                    Thread.sleep(20);
+                }catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        outputThread.start();
     }
-    public void stopPlay() {
+    public void pause() {
         pullThread.stopH264ReceiveStream();
         mediaCodec.stop();
+    }
+    public void release() {
+        mediaCodec.release();
     }
     private byte[] getBytes(String path) throws IOException {
         InputStream is = new DataInputStream(new FileInputStream(new File(path)));
@@ -143,27 +205,27 @@ public class H264Player extends Thread {
         return true;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    @Override
-    public void run() {
-        buffer = new ByteArrayOutputStream();
-        // 启动数据接收线程
-        pullThread = new H264StreamPullThread(new H264StreamPullThreadCallbackInterface() {
-            @Override
-            public void reportStatus(int status, String msg) {
-                if (status == H264StreamPullThread.STOP || status == H264StreamPullThread.FAILED){
-                    Log.d(TAG, "reportStatus: " + msg);
-                    isExit = true;
-                }
-            }
-
-            @Override
-            public void receiveH264Data(byte[] data, int size) {
-                Log.d(TAG, "receiveH264Data: " + size);
-                decodeFrame(data);
-            }
-        });
-        pullThread.start();
+//    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+//    @Override
+//    public void run() {
+//        buffer = new ByteArrayOutputStream();
+//        // 启动数据接收线程
+//        pullThread = new H264StreamPullThread(new H264StreamPullThreadCallbackInterface() {
+//            @Override
+//            public void reportStatus(int status, String msg) {
+//                if (status == H264StreamPullThread.STOP || status == H264StreamPullThread.FAILED){
+//                    Log.d(TAG, "reportStatus: " + msg);
+//                    isExit = true;
+//                }
+//            }
+//
+//            @Override
+//            public void receiveH264Data(byte[] data, int size) {
+//                Log.d(TAG, "receiveH264Data: " + size);
+//                decodeFrame(data);
+//            }
+//        });
+//        pullThread.start();
 
         // 解码主线程
 //        while (!isExit) {
@@ -184,7 +246,7 @@ public class H264Player extends Thread {
 //        }
 //        isExit = true;
 //        pullThread.stopH264ReceiveStream();
-    }
+//    }
     //    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 //    @Override
 //    public void run() {

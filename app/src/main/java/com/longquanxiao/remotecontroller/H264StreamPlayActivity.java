@@ -1,6 +1,7 @@
 package com.longquanxiao.remotecontroller;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -8,7 +9,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaCodec;
-import android.media.MediaFormat;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -18,10 +19,8 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Button;
-import android.widget.Toast;
 
 import com.longquanxiao.remotecontroller.core.RCTLCore;
-import com.longquanxiao.remotecontroller.manager.DecodeH264Stream;
 import com.longquanxiao.remotecontroller.manager.DecoderManager;
 import com.longquanxiao.remotecontroller.utils.H264Player;
 
@@ -29,9 +28,6 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -80,7 +76,7 @@ public class H264StreamPlayActivity extends AppCompatActivity {
         mEndBtn.setOnClickListener((v) -> {
             // DecoderManager.getInstance().close();
             // finish();
-            h264Player.stopPlay();
+            h264Player.pause();
         });
 
         // Check if we have write permission
@@ -92,18 +88,13 @@ public class H264StreamPlayActivity extends AppCompatActivity {
         initSurface();
     }
 
-
-
     private void initSurface() {
         final SurfaceHolder surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             @Override
             public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                h264Player = new H264Player(
-                        H264StreamPlayActivity.this,
-                        filePath,
-                        surfaceHolder.getSurface()
-                );
+                h264Player = new H264Player( H264StreamPlayActivity.this, filePath, surfaceHolder.getSurface());
                 h264Player.play();
             }
 
@@ -114,7 +105,16 @@ public class H264StreamPlayActivity extends AppCompatActivity {
 
             @Override
             public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-
+                try {
+                    h264Player.pause();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+                try {
+                    h264Player.release();
+                }catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -352,7 +352,7 @@ public class H264StreamPlayActivity extends AppCompatActivity {
 //        DecodeH264Stream.getInstance().exitDecoder = true;
 //        DecodeH264Stream.getInstance().close();
         Log.d(TAG, "onDestroy..");
-        h264Player.stopPlay();
+        h264Player.pause();
     }
 
     public static Surface getSurface() {

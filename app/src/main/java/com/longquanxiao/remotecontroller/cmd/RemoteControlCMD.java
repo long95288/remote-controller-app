@@ -1,201 +1,32 @@
 package com.longquanxiao.remotecontroller.cmd;
 
-import android.util.JsonWriter;
-
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.annotation.JSONField;
+import com.longquanxiao.remotecontroller.cmd.DTO.BaseRequestDTO;
+import com.longquanxiao.remotecontroller.cmd.DTO.BaseResponseDTO;
+import com.longquanxiao.remotecontroller.cmd.DTO.GetMasterVolumeResponseDTO;
+import com.longquanxiao.remotecontroller.cmd.DTO.SendMsgRequestDTO;
+import com.longquanxiao.remotecontroller.cmd.DTO.SetMasterVolumeRequestDTO;
+import com.longquanxiao.remotecontroller.cmd.DTO.SetMasterVolumeResponseDTO;
+import com.longquanxiao.remotecontroller.cmd.DTO.SetShutdownPlanRequestDTO;
+import com.longquanxiao.remotecontroller.cmd.DTO.SetShutdownPlanResponseDTO;
 import com.longquanxiao.remotecontroller.core.RCTLCore;
 
-import org.json.JSONObject;
-
-import java.io.IOException;
-
 import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-/**
- * 远程控制指令
- *
- */
-
-class BaseRequestDTO {
-
-    @JSONField(name = "CMD")
-    public int cmd;
-
-    public BaseRequestDTO(int cmd) {
-        this.cmd = cmd;
-    }
-
-    public int getCmd() {
-        return cmd;
-    }
-    public void setCmd(int cmd) {
-        this.cmd = cmd;
-    }
-}
-class BaseResponseDTO {
-
-    @JSONField(name = "OptionStatus")
-    public int optionStatus;
-
-    @JSONField(name = "Message")
-    public String message;
-
-    @JSONField(name = "Data")
-    public Object data;
-
-    public BaseResponseDTO() {
-    }
-    public BaseResponseDTO(int optionStatus, String message, Object data) {
-        this.optionStatus = optionStatus;
-        this.message = message;
-        this.data = data;
-    }
-    public int getOptionStatus() {
-        return optionStatus;
-    }
-    public void setOptionStatus(int optionStatus) {
-        this.optionStatus = optionStatus;
-    }
-    public String getMessage() {
-        return message;
-    }
-    public void setMessage(String message) {
-        this.message = message;
-    }
-    public Object getData() {
-        return data;
-    }
-    public void setData(Object data) {
-        this.data = data;
-    }
-}
-
-class SetMasterVolumeRequestDTO extends BaseRequestDTO {
-
-    @JSONField(name = "Volume")
-    private int volume;
-
-    public SetMasterVolumeRequestDTO(int cmd, int volume) {
-        super(cmd);
-        this.volume = volume;
-    }
-
-    public int getVolume() {
-        return volume;
-    }
-
-    public void setVolume(int volume) {
-        this.volume = volume;
-    }
-}
-
-
-class SetMasterVolumeResponseDTO {
-
-    @JSONField(name = "Volume")
-    private int volume;
-
-    public SetMasterVolumeResponseDTO(int volume) {
-        this.volume = volume;
-    }
-
-    public SetMasterVolumeResponseDTO() {
-    }
-
-    public int getVolume() {
-        return volume;
-    }
-
-    public void setVolume(int volume) {
-        this.volume = volume;
-    }
-}
-class GetMasterVolumeResponseDTO extends BaseResponseDTO {
-
-    @JSONField(name = "Volume")
-    private int volume;
-
-    public GetMasterVolumeResponseDTO(int volume) {
-        this.volume = volume;
-    }
-
-    public GetMasterVolumeResponseDTO() {
-    }
-
-    public int getVolume() {
-        return volume;
-    }
-
-    public void setVolume(int volume) {
-        this.volume = volume;
-    }
-}
-
-class SetShutdownPlanRequestDTO extends BaseRequestDTO {
-
-    @JSONField(name = "ShutdownTime")
-    private int shutdownTime;
-
-    public SetShutdownPlanRequestDTO(int cmd) {
-        super(cmd);
-    }
-
-    public SetShutdownPlanRequestDTO(int cmd, int shutdownTime) {
-        super(cmd);
-        this.shutdownTime = shutdownTime;
-    }
-
-    public int getShutdownTime() {
-        return shutdownTime;
-    }
-
-    public void setShutdownTime(int shutdownTime) {
-        this.shutdownTime = shutdownTime;
-    }
-}
-
-
-class SetShutdownPlanResponseDTO {
-    @JSONField(name = "ShutdownTime")
-    private int shutdownTime;
-
-    public SetShutdownPlanResponseDTO() {
-    }
-
-    public SetShutdownPlanResponseDTO(int shutdownTime) {
-        this.shutdownTime = shutdownTime;
-    }
-
-    public int getShutdownTime() {
-        return shutdownTime;
-    }
-
-    public void setShutdownTime(int shutdownTime) {
-        this.shutdownTime = shutdownTime;
-    }
-}
-class CancelShutdownPlanRequestDTO extends BaseRequestDTO {
-    public CancelShutdownPlanRequestDTO(int cmd) {
-        super(cmd);
-    }
-}
-class CancelShutdownPlanResponseDTO  {
-}
 
 public class RemoteControlCMD {
     public static final int  SETSHUTDOWNPLAN_CMD = 1;
     public static final int CANCELSHUTDOWNPLAN_CMD = 2;
     public static final int GETMASTERVOLUME_CMD = 3;
     public static final int SETMASTERVOLUME_CMD = 4;
+    public static final int SENDMSG_CMD = 5;
 
-
+    
     public static Integer getMasterVolume() throws Exception {
         try {
             OkHttpClient client = new OkHttpClient();
@@ -310,6 +141,31 @@ public class RemoteControlCMD {
                 System.out.println("setShutdownPlanResponseDTO shutdownTime"+ setShutdownPlanResponseDTO.getShutdownTime());
                 return true;
             }
+        }else{
+            System.out.println("请求失败");
+        }
+        return false;
+    }
+
+    public static Boolean sendMsg(String msg) throws Exception {
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://"+ RCTLCore.getInstance().getServerIP() +":"+ RCTLCore.getInstance().getServerPort() + "/cmd";
+        System.out.println("请求IP : " + url);
+
+        String requestBody = JSON.toJSONString(new SendMsgRequestDTO(SENDMSG_CMD, msg));
+
+        System.out.println("SendMsgRequestDTO request body: " + requestBody);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(RequestBody.create(MediaType.get("application/json"), requestBody))
+                .build();
+        Call call = client.newCall(request);
+        Response response = call.execute();
+        if (response.isSuccessful()) {
+            String requestBodyStr =  response.body().string();
+            System.out.printf("Response %s%n",requestBodyStr);
+            BaseResponseDTO baseResponseDTO = JSON.parseObject(requestBodyStr, BaseResponseDTO.class);
+            return null != baseResponseDTO && 2000000 == baseResponseDTO.optionStatus;
         }else{
             System.out.println("请求失败");
         }

@@ -81,6 +81,8 @@ public class FileTransferActivity extends AppCompatActivity {
             RCTLCore.getInstance().sendMsg(msg, (status,msg2) -> {
                 if (status == 1){
                     addStatusViewString(String.format("Success Send: %s", msg));
+                }else {
+                    addStatusViewString(String.format("Send %s: failed  %s", msg, msg2));
                 }
             });
         });
