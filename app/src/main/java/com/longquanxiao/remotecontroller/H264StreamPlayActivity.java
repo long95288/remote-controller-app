@@ -8,6 +8,10 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.media.MediaCodec;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,6 +27,7 @@ import android.widget.Button;
 import com.longquanxiao.remotecontroller.core.RCTLCore;
 import com.longquanxiao.remotecontroller.manager.DecoderManager;
 import com.longquanxiao.remotecontroller.utils.H264Player;
+import com.longquanxiao.remotecontroller.utils.H264StreamPullThread;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -63,6 +68,9 @@ public class H264StreamPlayActivity extends AppCompatActivity {
     private String filePath = Environment.getExternalStorageDirectory() + "/" + FileName;
 
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
+
+    private int streamType = H264StreamPullThread.SCREEN_STREAM;
+
     private static String[] PERMISSIONS_STORAGE = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE };
@@ -72,7 +80,13 @@ public class H264StreamPlayActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_h264_stream_play);
         surfaceView = findViewById(R.id.surfaceview);
-
+        Intent intent = getIntent();
+        if(null != intent) {
+            this.streamType = (int) intent.getIntExtra("StreamType", 1);
+            Log.d(TAG, "onCreate: StreamType " + this.streamType);
+        }else{
+            Log.d(TAG, "onCreate: StreamType NOT GET");
+        }
         // Check if we have write permission
         int permission = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if (permission != PackageManager.PERMISSION_GRANTED) {
@@ -88,7 +102,7 @@ public class H264StreamPlayActivity extends AppCompatActivity {
             @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             @Override
             public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                h264Player = new H264Player( H264StreamPlayActivity.this, filePath, surfaceHolder.getSurface());
+                h264Player = new H264Player( H264StreamPlayActivity.this, filePath, surfaceHolder.getSurface(), streamType);
                 h264Player.play();
             }
 

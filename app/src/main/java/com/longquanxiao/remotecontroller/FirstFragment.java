@@ -110,14 +110,20 @@ public class FirstFragment extends Fragment {
         Button shutdownBtn = view.findViewById(R.id.shutdownBtn);
         Button cancelShutdownBtn = view.findViewById(R.id.cancelShutdownBtn);
 
-        view.findViewById(R.id.button_first).setOnClickListener((v ->
-        {
+        view.findViewById(R.id.button_first).setOnClickListener((v ->{
             Intent intent = new Intent();
             intent.putExtra("isPlayH264", true);
+            intent.putExtra("StreamType", 1);
             intent.setClass(this.getActivity(), H264StreamPlayActivity.class);
             startActivity(intent);
         }));
 
+        view.findViewById(R.id.showPcCameraBtn).setOnClickListener(v -> {
+            Intent intent = new Intent();
+            intent.putExtra("StreamType", 2);
+            intent.setClass(this.getActivity(), H264StreamPlayActivity.class);
+            startActivity(intent);
+        });
         view.findViewById(R.id.goToFileTransferActivityBtn).setOnClickListener((v) -> {
             Intent intent = new Intent();
             intent.setClass(this.getActivity(), FileTransferActivity.class);

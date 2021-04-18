@@ -1,5 +1,6 @@
 package com.longquanxiao.remotecontroller.utils;
 
+import android.annotation.SuppressLint;
 import android.util.Log;
 
 import com.longquanxiao.remotecontroller.core.RCTLCore;
@@ -9,7 +10,9 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 
 import static android.content.ContentValues.TAG;
 
@@ -19,6 +22,9 @@ public class H264StreamPullThread extends Thread {
     public static final int STOP = 2;
     public static final int FAILED = 3;
 
+    public static final int SCREEN_STREAM = 1;
+    public static final int CAMERA_STREAM = 2;
+
     // 6M的缓冲区
     private static final int BUFFER_MAX_SIZE = 6 * 1024 * 1024;
     private byte[] buffer = new byte[BUFFER_MAX_SIZE];
@@ -27,10 +33,14 @@ public class H264StreamPullThread extends Thread {
     H264StreamPullThreadCallbackInterface callback;
     volatile int status;
 
+    private int streamType = SCREEN_STREAM;
     public H264StreamPullThread(H264StreamPullThreadCallbackInterface callback) {
         this.callback = callback;
     }
-
+    public H264StreamPullThread(H264StreamPullThreadCallbackInterface callback, int streamType) {
+        this.callback = callback;
+        this.streamType = streamType;
+    }
     public void stopH264ReceiveStream() {
         Log.d(TAG, "stopH264ReceiveStream: set");
         this.status = STOP;
@@ -83,6 +93,7 @@ public class H264StreamPullThread extends Thread {
     }
 
 
+    @SuppressLint("DefaultLocale")
     @Override
     public void run() {
         status = RUNNING;
@@ -91,6 +102,11 @@ public class H264StreamPullThread extends Thread {
         try {
             Socket socket = new Socket(ip, port);
             InputStream inputStream = socket.getInputStream();
+
+            // 告诉服务器需要获取的流
+            OutputStream outputStream = socket.getOutputStream();
+            outputStream.write(String.format("%d", this.streamType).getBytes());
+
             BufferedInputStream bis = new BufferedInputStream(inputStream);
             int size = 2 * 1024 * 1024;
             byte[] buf = new byte[size];

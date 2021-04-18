@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(view -> Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show());
 //        // 设置背景图片
-//        getWindow().setBackgroundDrawableResource(R.drawable.bg);
+        getWindow().setBackgroundDrawableResource(R.drawable.bg);
     }
 
     @Override

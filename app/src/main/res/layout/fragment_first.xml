@@ -13,7 +13,7 @@
         android:layout_height="60dp"
         android:text="文件管理"
         app:layout_constraintBottom_toTopOf="@+id/showPcScreenBtn"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/showPcCameraBtn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/shutdownBtn" />
 
@@ -35,7 +35,7 @@
         android:layout_width="150dp"
         android:layout_height="60dp"
         android:cursorVisible="false"
-        android:text="@string/next"
+        android:text="显示电脑屏幕H264"
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -155,9 +155,20 @@
         android:id="@+id/showPcScreenBtn"
         android:layout_width="150dp"
         android:layout_height="60dp"
-        android:text="显示电脑屏幕"
+        android:text="显示电脑屏幕png"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/button_first"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        tools:visibility="visible" />
+
+    <Button
+        android:id="@+id/showPcCameraBtn"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
+        android:text="显示电脑摄像头"
+        app:layout_constraintBottom_toTopOf="@+id/button_first"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/goToFileTransferActivityBtn"
+        app:layout_constraintTop_toBottomOf="@+id/cancelShutdownBtn" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

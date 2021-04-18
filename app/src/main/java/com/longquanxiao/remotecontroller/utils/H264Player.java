@@ -35,18 +35,20 @@ public class H264Player {
     boolean isExit = false;
     private Lock lock;
     private volatile boolean isViewed;
+    private int streamType = H264StreamPullThread.SCREEN_STREAM;
     private Thread inputThread;
     private Thread outputThread;
 
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public H264Player(Context context, String path, Surface surface){
+    public H264Player(Context context, String path, Surface surface, int streamType){
         lock = new ReentrantLock();
         this.path = path;
         width = 1920;
         height = 1080;
         mediaCodecBufferInfo = new MediaCodec.BufferInfo();
         isViewed = false;
+        this.streamType = streamType;
         try {
             mediaCodec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
             MediaFormat mediaFormat = MediaFormat.createVideoFormat( mimeType, width, height);
@@ -88,7 +90,7 @@ public class H264Player {
                         Log.d(TAG, "receiveH264Data: "+e.getMessage());
                     }
                 }
-            });
+            }, streamType);
             pullThread.start();
         });
         inputThread.start();
