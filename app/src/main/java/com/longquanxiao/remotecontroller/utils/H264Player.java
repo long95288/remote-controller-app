@@ -43,14 +43,16 @@ public class H264Player {
     public H264Player(Context context, String path, Surface surface){
         lock = new ReentrantLock();
         this.path = path;
-        width = 128;
-        height = 128;
+        width = 1920;
+        height = 1080;
         mediaCodecBufferInfo = new MediaCodec.BufferInfo();
         isViewed = false;
         try {
             mediaCodec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
             MediaFormat mediaFormat = MediaFormat.createVideoFormat( mimeType, width, height);
             mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
+            mediaFormat.setInteger(MediaFormat.KEY_ROTATION, 90);
+//            mediaFormat.setInteger();
             // 需要页面绘制完成才能进行config
             mediaCodec.configure(mediaFormat, surface, null, 0);
         }catch (IOException e) {
