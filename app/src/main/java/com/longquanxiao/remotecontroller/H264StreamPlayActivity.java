@@ -8,64 +8,28 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
-import android.media.MediaCodec;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.widget.Button;
 
-import com.longquanxiao.remotecontroller.core.RCTLCore;
-import com.longquanxiao.remotecontroller.manager.DecoderManager;
 import com.longquanxiao.remotecontroller.utils.H264Player;
 import com.longquanxiao.remotecontroller.utils.H264StreamPullThread;
-
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.Socket;
-import java.nio.ByteBuffer;
 
 public class H264StreamPlayActivity extends AppCompatActivity {
 
     private static final String TAG = H264StreamPlayActivity.class.getSimpleName();
 
-    private static final int INIT_MANAGER_MSG = 0x01;
-
-    private static final int INIT_MANAGER_DELAY = 1 * 1000;
-
     public static SurfaceView surfaceView;
 
-    private SurfaceHolder mSurfaceHolder;
-
-    private Button mEndBtn;
-
-    private boolean isPlayH264;
-
-    private Thread mDecodeThread;
-    private MediaCodec mCodec;
-
-    private boolean mStopFlag = false;
-    private DataInputStream mInputStream;
-    private String FileName = "test.h264";
+    private String filename = "test.h264";
     private static final int VIDEO_WIDTH = 1920; //长宽应该关系不大
     private static final int VIDEO_HEIGHT = 1088;
-    private int FrameRate = 15;
-    private Boolean UseSPSandPPS = false;
     private H264Player h264Player;
-    private String filePath = Environment.getExternalStorageDirectory() + "/" + FileName;
+    private final String filePath = Environment.getExternalStorageDirectory() + "/" + filename;
 
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
 
