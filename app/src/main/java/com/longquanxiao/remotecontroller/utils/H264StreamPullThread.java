@@ -42,7 +42,7 @@ public class H264StreamPullThread extends Thread {
         this.streamType = streamType;
     }
     public void stopH264ReceiveStream() {
-        Log.d(TAG, "stopH264ReceiveStream: set");
+        Log.d(TAG, "stopH264ReceiveStream ");
         this.status = STOP;
         this.status = STOP;
         this.status = STOP;
@@ -112,7 +112,7 @@ public class H264StreamPullThread extends Thread {
             byte[] buf = new byte[size];
             int readSize = 0;
             while (this.status == RUNNING ) {
-                Log.d(TAG, "run: .....");
+                // Log.d(TAG, "run: .....");
                 byte[] data = getSplitData();
                 if (null != data) {
                     callback.receiveH264Data(data, data.length);

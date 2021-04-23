@@ -3,6 +3,7 @@ package com.longquanxiao.remotecontroller.utils;
 import android.content.Context;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.util.Log;
 import android.view.View;
 //import org.apache.http.conn.util.InetAddressUtils;
 
@@ -21,6 +22,8 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * 网络相关工具,包括嗅探局域网内的数据
@@ -77,6 +80,28 @@ public class NetTool {
         }
         return null;
     }
+
+    public static boolean checkServerIp(String ip) throws Exception {
+        int serverPort = 1400;
+        DatagramSocket udpSocket = new DatagramSocket();
+        udpSocket.send(new DatagramPacket("123".getBytes(), "123".length(), InetAddress.getByName(ip), serverPort));
+        byte[] buf = new byte[1024];
+
+        DatagramPacket receivePacket = new DatagramPacket(buf, buf.length);
+        udpSocket.receive(receivePacket);
+        if (ip.equals(receivePacket.getAddress().getHostAddress())) {
+            String response = new String(receivePacket.getData()).substring(0, receivePacket.getLength());
+            if ("321".equals(response)) {
+                Log.d(TAG, "checkServerIp: Receive from Peer " + receivePacket.getAddress().getHostAddress() + " response");
+                return true;
+            }
+        }else{
+            Log.d(TAG, "checkServerIp: UNKNOWN response package "+ receivePacket.getAddress().getHostAddress());
+        }
+        return false;
+    }
+
+
     public static String geLocalWifiAddress(View view) {
         String ipv4 = "";
         WifiManager wifiManager = (WifiManager)view.getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);

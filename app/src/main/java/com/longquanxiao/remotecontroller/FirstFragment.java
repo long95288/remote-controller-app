@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +14,7 @@ import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -71,6 +73,9 @@ public class FirstFragment extends Fragment {
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         // 初始化页面数据,当前电脑的状态,
+        Toast toast = Toast.makeText(getContext(), "检查成功", Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.TOP, 0, 0);
+
         statusView = view.findViewById(R.id.statusText);
         ipEditText = view.findViewById(R.id.ipInputText);
 
@@ -96,6 +101,8 @@ public class FirstFragment extends Fragment {
                 RCTLCore.getInstance().setServerIP(serverIP);
                 RCTLCore.getInstance().setServerPort(9999);
                 hasNoticeServerIP = true;
+                toast.setText("探测服务器IP"+serverIP);
+                toast.show();
                 // 获得音量
                 try {
                     int volume = RemoteControlCMD.getMasterVolume();
@@ -109,6 +116,30 @@ public class FirstFragment extends Fragment {
 
         Button shutdownBtn = view.findViewById(R.id.shutdownBtn);
         Button cancelShutdownBtn = view.findViewById(R.id.cancelShutdownBtn);
+
+        // 检查服务器IP地址有效性
+        view.findViewById(R.id.testServerIpBtn).setOnClickListener((v -> {
+            //
+            String serverIp = ipEditText.getText().toString();
+            v.setClickable(false);
+            new Thread(() -> {
+                try {
+                    if (NetTool.checkServerIp(serverIp)) {
+                        statusView.post(() -> {statusView.setText("检查IP成功");});
+                        RCTLCore.getInstance().setServerIP(serverIP);
+                        toast.setText("检查成功");
+                        toast.show();
+                    }else {
+                        statusView.post(() -> {statusView.setText("检查IP失败");});
+                        toast.setText("检查失败");
+                        toast.show();
+                    }
+                }catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+            v.setClickable(true);
+        }));
 
         view.findViewById(R.id.button_first).setOnClickListener((v ->{
             Intent intent = new Intent();
@@ -129,6 +160,8 @@ public class FirstFragment extends Fragment {
             intent.setClass(this.getActivity(), FileTransferActivity.class);
             startActivity(intent);
         });
+
+
 
         // 获得电脑屏幕
         view.findViewById(R.id.showPcScreenBtn).setOnClickListener(v -> NavHostFragment.findNavController(FirstFragment.this)

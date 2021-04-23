@@ -25,7 +25,6 @@ import static android.content.ContentValues.TAG;
 public class H264Player {
     private String path;
     private MediaCodec mediaCodec;
-    private H264StreamPullThread pullThread;
     private ByteArrayOutputStream buffer;
     private Surface surface;
     private String mimeType = "video/avc";
@@ -36,7 +35,7 @@ public class H264Player {
     private Lock lock;
     private volatile boolean isViewed;
     private int streamType = H264StreamPullThread.SCREEN_STREAM;
-    private Thread inputThread;
+    private H264StreamPullThread inputThread;
     private Thread outputThread;
 
 
@@ -64,38 +63,37 @@ public class H264Player {
 
     public void play() {
         mediaCodec.start();
-        inputThread = new Thread(()->{
-            pullThread = new H264StreamPullThread(new H264StreamPullThreadCallbackInterface() {
-                @Override
-                public void reportStatus(int status, String msg) {
-                    if (status == H264StreamPullThread.STOP || status == H264StreamPullThread.FAILED){
-                        Log.d(TAG, "reportStatus: " + msg);
-                        isExit = true;
-                    }
+        // 开启拉流线程
+        inputThread = new H264StreamPullThread(new H264StreamPullThreadCallbackInterface() {
+            @Override
+            public void reportStatus(int status, String msg) {
+                if (status == H264StreamPullThread.STOP || status == H264StreamPullThread.FAILED){
+                    Log.d(TAG, "reportStatus: " + msg);
+                    isExit = true;
                 }
+            }
 
-                @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-                @Override
-                public void receiveH264Data(byte[] data, int size) {
-                    Log.d(TAG, "receiveH264Data: " + size);
-                    try {
-                        ByteBuffer[] inputBuffers = mediaCodec.getInputBuffers();
-                        int inputBufferIndex = mediaCodec.dequeueInputBuffer(0);
-                        if (inputBufferIndex >= 0) {
-                            ByteBuffer inputBuffer = mediaCodec.getInputBuffer(inputBufferIndex);
-                            inputBuffer.put(data, 0, size);
-                            mediaCodec.queueInputBuffer(inputBufferIndex, 0, size,0, 0);
-                        }
-                    }catch (Exception e) {
-                        Log.d(TAG, "receiveH264Data: "+e.getMessage());
+            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+            @Override
+            public void receiveH264Data(byte[] data, int size) {
+                // Log.d(TAG, "receiveH264Data: " + size);
+                try {
+                    ByteBuffer[] inputBuffers = mediaCodec.getInputBuffers();
+                    int inputBufferIndex = mediaCodec.dequeueInputBuffer(0);
+                    if (inputBufferIndex >= 0) {
+                        ByteBuffer inputBuffer = mediaCodec.getInputBuffer(inputBufferIndex);
+                        inputBuffer.put(data, 0, size);
+                        mediaCodec.queueInputBuffer(inputBufferIndex, 0, size,0, 0);
                     }
+                }catch (Exception e) {
+                    Log.d(TAG, "receiveH264Data: "+e.getMessage());
                 }
-            }, streamType);
-            pullThread.start();
-        });
+            }
+        }, streamType);
         inputThread.start();
 
         outputThread = new Thread(() -> {
+            long count = 0;
             while (!isExit){
                 try{
                     int outIndex = mediaCodec.dequeueOutputBuffer(mediaCodecBufferInfo, 300 * 1000);
@@ -107,8 +105,14 @@ public class H264Player {
 //        ByteBuffer byteBuffer = mediaCodec.getOutputBuffer(outIndex);
                     // 直接渲染到surface
                     mediaCodec.releaseOutputBuffer(outIndex, true);
-                    Thread.sleep(20);
-                }catch (Exception e) {
+                    count ++;
+                    if (count % 60 == 0) {
+                        Log.d(TAG, String.format("play: decode %d video frame\n",  count));
+                    }
+                    // Thread.sleep(20);
+                }catch (IllegalStateException e){
+                  //
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -116,11 +120,17 @@ public class H264Player {
         outputThread.start();
     }
     public void pause() {
-        pullThread.stopH264ReceiveStream();
+        inputThread.stopH264ReceiveStream();
         mediaCodec.stop();
     }
     public void release() {
-        mediaCodec.release();
+        try {
+            inputThread.stopH264ReceiveStream();
+            isExit = true;
+            mediaCodec.release();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
     private byte[] getBytes(String path) throws IOException {
         InputStream is = new DataInputStream(new FileInputStream(new File(path)));
