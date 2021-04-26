@@ -11,6 +11,7 @@ import com.longquanxiao.remotecontroller.core.RCTLCore;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -47,32 +48,17 @@ public class NetTool {
         int serverPort = 1400;
         // 使用UDP向每个端口发个UDP包,然后查看那个端口返回数据
         try{
-            DatagramSocket udpSocket = new DatagramSocket();
             for (int i = 1; i <= 255; i++) {
                 String findServerIP = ipPrefix + i;
                 if (!findServerIP.equals(localIpv4)){
                     try {
-                        udpSocket.send(new DatagramPacket("123".getBytes(), "123".length(), InetAddress.getByName(findServerIP), serverPort));
-                        // System.out.println("探测:"+ findServerIP);
+                        Log.d(TAG, "getServerIp: check ip " + findServerIP);
+                        if (checkServerIp(findServerIP)) {
+                            return findServerIP;
+                        }
                     }catch (Exception e){
                         e.printStackTrace();
                     }
-                }
-            }
-            // 接收数据
-            for(int i = 0;i < 255;i ++) {
-                byte[] recieveData = new byte[1024];
-                // System.out.println("等待响应");
-                DatagramPacket receivePacket = new DatagramPacket(recieveData, recieveData.length);
-                udpSocket.receive(receivePacket);
-                String receiveStr =  new String(recieveData).substring(0, receivePacket.getLength());
-                // System.out.println("收到响应:"+ receiveStr);
-                // 收到数据,读取出
-                if ("321".equals(receiveStr)) {
-                    // 是服务器响应,取出这个packet的IP和PORT
-                    String peerIp = receivePacket.getAddress().getHostAddress();
-                    System.out.println("探测到服务器IP:" + peerIp);
-                    return peerIp;
                 }
             }
         }catch (Exception e){
@@ -81,20 +67,48 @@ public class NetTool {
         return null;
     }
 
+    public static byte[] getNoticeServerCMDRequestData() {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        // 请求长度: 4(length) + ("123")
+        String requestData = "123";
+        byte[] dataLengthBytes = DataFormatUtil.uint32ToBytesBigEnd(4 + 4 + requestData.getBytes().length);
+        try{
+            outputStream.write(dataLengthBytes);
+            byte[] type = DataFormatUtil.uint32ToBytesBigEnd(1);
+            outputStream.write(type);
+            outputStream.write(requestData.getBytes(), 0, requestData.getBytes().length);
+            return outputStream.toByteArray();
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static boolean checkNoticeServerCMDResponse(byte[] data) {
+        if (null == data) {
+            return false;
+        }
+        String expectResponse = "321";
+        String response = new String(data);
+        return expectResponse.equals(response);
+    }
+
     public static boolean checkServerIp(String ip) throws Exception {
         int serverPort = 1400;
         DatagramSocket udpSocket = new DatagramSocket();
-        udpSocket.send(new DatagramPacket("123".getBytes(), "123".length(), InetAddress.getByName(ip), serverPort));
+        udpSocket.setSoTimeout(1000);
+        byte[] requestData = getNoticeServerCMDRequestData();
+        if (null == requestData) {
+            return false;
+        }
+        udpSocket.send(new DatagramPacket(requestData, requestData.length, InetAddress.getByName(ip), serverPort));
         byte[] buf = new byte[1024];
-
         DatagramPacket receivePacket = new DatagramPacket(buf, buf.length);
         udpSocket.receive(receivePacket);
         if (ip.equals(receivePacket.getAddress().getHostAddress())) {
-            String response = new String(receivePacket.getData()).substring(0, receivePacket.getLength());
-            if ("321".equals(response)) {
-                Log.d(TAG, "checkServerIp: Receive from Peer " + receivePacket.getAddress().getHostAddress() + " response");
-                return true;
-            }
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            byteArrayOutputStream.write(receivePacket.getData(),4, receivePacket.getLength() - 4);
+            return NetTool.checkNoticeServerCMDResponse(byteArrayOutputStream.toByteArray());
         }else{
             Log.d(TAG, "checkServerIp: UNKNOWN response package "+ receivePacket.getAddress().getHostAddress());
         }
