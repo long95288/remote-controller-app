@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +24,8 @@ import androidx.navigation.fragment.NavHostFragment;
 import com.longquanxiao.remotecontroller.cmd.RemoteControlCMD;
 import com.longquanxiao.remotecontroller.core.RCTLCore;
 import com.longquanxiao.remotecontroller.utils.NetTool;
+
+import static android.content.ContentValues.TAG;
 
 
 public class FirstFragment extends Fragment {
@@ -126,6 +129,8 @@ public class FirstFragment extends Fragment {
                 try {
                     if (NetTool.checkServerIp(serverIp)) {
                         statusView.post(() -> {statusView.setText("检查IP成功");});
+                        serverIP = ipEditText.getText().toString();
+                        Log.d(TAG, "onViewCreated: checkout success ip" + serverIp);
                         RCTLCore.getInstance().setServerIP(serverIP);
                         toast.setText("检查成功");
                         toast.show();

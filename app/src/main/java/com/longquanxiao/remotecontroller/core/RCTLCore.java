@@ -5,26 +5,42 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import com.longquanxiao.remotecontroller.cmd.RemoteControlCMD;
+import com.longquanxiao.remotecontroller.protcol.TLVData;
+import com.longquanxiao.remotecontroller.utils.DataFormatUtil;
 import com.longquanxiao.remotecontroller.utils.FileUploadThreadCallBackInterface;
 import com.longquanxiao.remotecontroller.utils.FileUploadThread;
 import com.longquanxiao.remotecontroller.utils.SendMsgCallbackInterface;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
+import static android.content.ContentValues.TAG;
 import static com.longquanxiao.remotecontroller.utils.FileUploadThread.UPLOAD_FAILED;
 
 /**
  * 核心类,单例
  */
 public class RCTLCore {
+
+    private static final int MOUSE_CTL_TYPE_MOVE_ABSOLUTE      = 0;  // 指针移动
+    private static final int MOUSE_CTL_TYPE_LEFT_SINGLE_CLICK  = 1;  // 左键单击
+    private static final int MOUSE_CTL_TYPE_LEFT_DOUBLE_CLICK  = 2;  // 左键双击
+    private static final int MOUSE_CTL_TYPE_RIGHT_SINGLE_CLICK = 3;  // 右键单击
+    private static final int MOUSE_CTL_TYPE_MOVE_RELATIVE      = 4;  // 指针相对移动
+
     private static RCTLCore RCTLCore = null;
 
     public static final int RCTLCORE_STATUS_RUNNING = 1;
@@ -43,10 +59,43 @@ public class RCTLCore {
 
     FileUploadThreadCallBackInterface fileUploadThreadCallBack = null;
 
+    DatagramSocket cmdUpdSocket = null;
+
+    private Thread cmdUdpSocketThread = null;
+    private static final int cmdUdpSocketThreadRunning = 1;
+    private int cmdUdpSocketThreadStatus = 0;
+
+    private List<TLVData> cmdList = null;
+
+
     private RCTLCore() {
         connetionList = new LinkedList<>();
         uploadFileThreadList = new LinkedList<>();
         uploadFileStatusMap = new HashMap<>();
+        cmdList = new LinkedList<>();
+        cmdUdpSocketThread = new Thread(() -> {
+            String serverIp = "192.168.43.86";
+            int port = 1405;
+            try{
+                cmdUpdSocket = new DatagramSocket();
+            }catch (Exception e){
+                e.printStackTrace();
+                return;
+            }
+            while (cmdUdpSocketThreadStatus == cmdUdpSocketThreadRunning) {
+                try {
+                    if (! cmdList.isEmpty()) {
+                        TLVData data = cmdList.remove(0);
+                        byte[] dataStream  = TLVData.encodeTLVDataByObject(data);
+                        cmdUpdSocket.send(new DatagramPacket(dataStream, dataStream.length, InetAddress.getByName(serverIp), port));
+                        Log.d(TAG, "RCTLCore: send CMD Data size: "+dataStream.length+" type:"+data.getType() + "length:"+ data.getLength());
+                    }
+                    // Thread.sleep(10);
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
         // init();
     }
     private void insertMessage(String s) {
@@ -192,4 +241,35 @@ public class RCTLCore {
             }
         }).start();
     }
+
+    public void sendMouseMoveRelativeCMD(int x, int y) {
+        if (cmdUdpSocketThreadStatus != cmdUdpSocketThreadRunning) {
+            cmdUdpSocketThread.start();
+            cmdUdpSocketThreadStatus = cmdUdpSocketThreadRunning;
+        }
+        // 鼠标相对移动
+        Log.d(TAG, "sendMouseMoveRelativeCMD: x = "+ x +"; y = " + y);
+        try {
+            // ByteArrayOutputStream value = new ByteArrayOutputStream();
+            // value.write(DataFormatUtil.uint32ToBytesBigEnd(MOUSE_CTL_TYPE_MOVE_RELATIVE));
+            // value.write(DataFormatUtil.uint32ToBytesBigEnd(x));
+            // value.write(DataFormatUtil.uint32ToBytesBigEnd(y));
+
+            @SuppressLint("DefaultLocale")
+            byte[] data = String.format("%d:%d:%d", MOUSE_CTL_TYPE_MOVE_RELATIVE, x, y).getBytes();
+            Log.d(TAG, "sendMouseMoveRelativeCMD:  data " + new String(data));
+            TLVData tlvData = new TLVData(TLVData.PEER_CMD_MOUSE_CTL, data.length, data);
+            cmdList.add(tlvData);
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public void sendMouseLeftClickCMD(int x, int y) {
+        // 左键单击
+
+    }
+    public void sendMouseRigthClickCMD(int x, int y) {
+        // 右键单击
+    }
+
 }

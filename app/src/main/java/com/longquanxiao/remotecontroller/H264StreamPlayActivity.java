@@ -21,8 +21,12 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.longquanxiao.remotecontroller.core.RCTLCore;
 import com.longquanxiao.remotecontroller.utils.H264Player;
 import com.longquanxiao.remotecontroller.utils.H264StreamPullThread;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class H264StreamPlayActivity extends AppCompatActivity implements View.OnTouchListener {
 
@@ -34,6 +38,9 @@ public class H264StreamPlayActivity extends AppCompatActivity implements View.On
     private String filename = "test.h264";
     private static final int VIDEO_WIDTH = 1920; //长宽应该关系不大
     private static final int VIDEO_HEIGHT = 1088;
+    private int lastCurX = 0;
+    private int lastCurY = 0;
+    private long lastCurTime = LocalDateTime.now().toInstant(ZoneOffset.of("+8")).toEpochMilli();
     private H264Player h264Player;
     private final String filePath = Environment.getExternalStorageDirectory() + "/" + filename;
 
@@ -118,29 +125,44 @@ public class H264StreamPlayActivity extends AppCompatActivity implements View.On
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
+
         switch (event.getAction()) {
-            /**
+            /*
              * 点击的开始位置
              */
             case MotionEvent.ACTION_DOWN:
                 Log.d(TAG, "onTouch: 起始位置：(" + event.getX() + "," + event.getY() +")");
+                lastCurX = (int) event.getX();
+                lastCurY = (int) event.getY();
                 break;
-            /**
+            /*
              * 触屏实时位置
              */
             case MotionEvent.ACTION_MOVE:
+                // 10 ms
+
                 Log.d(TAG, "onTouch: 实时位置：(" + event.getX() + "," + event.getY() +")");
+                int moveX = (lastCurX - (int)event.getX()) / 100;
+                int moveY= (lastCurY - (int)event.getY()) / 100;
+                long now =  LocalDateTime.now().toInstant(ZoneOffset.of("+8")).toEpochMilli();
+                if (now - lastCurTime > 30) {
+                    RCTLCore.getInstance().sendMouseMoveRelativeCMD(moveX, moveY);
+                    lastCurTime = now;
+                }
                 break;
-            /**
+            /*
              * 离开屏幕的位置
              */
             case MotionEvent.ACTION_UP:
                 Log.d(TAG, "onTouch: 结束位置：(" + event.getX() + "," + event.getY() +")");
+                lastCurX = (int) event.getX();
+                lastCurY = (int) event.getY();
                 break;
             default:
                 break;
         }
-        /**
+
+        /*
          *  注意返回值
          *  true：view继续响应Touch操作；
          *  false：view不再响应Touch操作，故此处若为false，只能显示起始位置，不能显示实时位置和结束位置
