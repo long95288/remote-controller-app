@@ -27,6 +27,7 @@ import com.longquanxiao.remotecontroller.utils.H264StreamPullThread;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Date;
 
 public class H264StreamPlayActivity extends AppCompatActivity implements View.OnTouchListener {
 
@@ -40,7 +41,7 @@ public class H264StreamPlayActivity extends AppCompatActivity implements View.On
     private static final int VIDEO_HEIGHT = 1088;
     private int lastCurX = 0;
     private int lastCurY = 0;
-    private long lastCurTime = LocalDateTime.now().toInstant(ZoneOffset.of("+8")).toEpochMilli();
+    private long lastCurTime = new Date().getTime();
     private H264Player h264Player;
     private final String filePath = Environment.getExternalStorageDirectory() + "/" + filename;
 
@@ -144,7 +145,7 @@ public class H264StreamPlayActivity extends AppCompatActivity implements View.On
                 Log.d(TAG, "onTouch: 实时位置：(" + event.getX() + "," + event.getY() +")");
                 int moveX = (lastCurX - (int)event.getX()) / 100;
                 int moveY= (lastCurY - (int)event.getY()) / 100;
-                long now =  LocalDateTime.now().toInstant(ZoneOffset.of("+8")).toEpochMilli();
+                long now = new Date().getTime();
                 if (now - lastCurTime > 30) {
                     RCTLCore.getInstance().sendMouseMoveRelativeCMD(moveX, moveY);
                     lastCurTime = now;

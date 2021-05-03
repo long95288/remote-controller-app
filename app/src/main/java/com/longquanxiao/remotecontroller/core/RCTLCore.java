@@ -74,7 +74,6 @@ public class RCTLCore {
         uploadFileStatusMap = new HashMap<>();
         cmdList = new LinkedList<>();
         cmdUdpSocketThread = new Thread(() -> {
-            String serverIp = "192.168.43.86";
             int port = 1405;
             try{
                 cmdUpdSocket = new DatagramSocket();
@@ -87,7 +86,7 @@ public class RCTLCore {
                     if (! cmdList.isEmpty()) {
                         TLVData data = cmdList.remove(0);
                         byte[] dataStream  = TLVData.encodeTLVDataByObject(data);
-                        cmdUpdSocket.send(new DatagramPacket(dataStream, dataStream.length, InetAddress.getByName(serverIp), port));
+                        cmdUpdSocket.send(new DatagramPacket(dataStream, dataStream.length, InetAddress.getByName(serverIP), port));
                         Log.d(TAG, "RCTLCore: send CMD Data size: "+dataStream.length+" type:"+data.getType() + "length:"+ data.getLength());
                     }
                     // Thread.sleep(10);
