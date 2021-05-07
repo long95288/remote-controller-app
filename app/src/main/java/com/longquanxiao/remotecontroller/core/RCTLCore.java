@@ -41,6 +41,16 @@ public class RCTLCore {
     private static final int MOUSE_CTL_TYPE_RIGHT_SINGLE_CLICK = 3;  // 右键单击
     private static final int MOUSE_CTL_TYPE_MOVE_RELATIVE      = 4;  // 指针相对移动
 
+    // EventType
+    private static final int MOUSEEVENTF_MOVE       = 0x0001; /* mouse move */
+    private static final int MOUSEEVENTF_LEFTDOWN   = 0x0002; /* left button down */
+    private static final int MOUSEEVENTF_LEFTUP     = 0x0004; /* left button up */
+    private static final int MOUSEEVENTF_RIGHTDOWN  = 0x0008; /* right button down */
+    private static final int MOUSEEVENTF_RIGHTUP    = 0x0010; /* right button up */
+    private static final int MOUSEEVENTF_MIDDLEDOWN = 0x0020; /* middle button down */
+    private static final int MOUSEEVENTF_MIDDLEUP   = 0x0040; /* middle button up */
+    private static final int MOUSEEVENTF_ABSOLUTE   = 0x8000; /* absolute move */
+    
     private static RCTLCore RCTLCore = null;
 
     public static final int RCTLCORE_STATUS_RUNNING = 1;
@@ -255,7 +265,7 @@ public class RCTLCore {
             // value.write(DataFormatUtil.uint32ToBytesBigEnd(y));
 
             @SuppressLint("DefaultLocale")
-            byte[] data = String.format("%d:%d:%d", MOUSE_CTL_TYPE_MOVE_RELATIVE, x, y).getBytes();
+            byte[] data = String.format("%d:%d:%d", MOUSE_CTL_TYPE_MOVE_RELATIVE, -y, x).getBytes();
             Log.d(TAG, "sendMouseMoveRelativeCMD:  data " + new String(data));
             TLVData tlvData = new TLVData(TLVData.PEER_CMD_MOUSE_CTL, data.length, data);
             cmdList.add(tlvData);
@@ -265,10 +275,34 @@ public class RCTLCore {
     }
     public void sendMouseLeftClickCMD(int x, int y) {
         // 左键单击
-
+        if (cmdUdpSocketThreadStatus != cmdUdpSocketThreadRunning) {
+            cmdUdpSocketThread.start();
+            cmdUdpSocketThreadStatus = cmdUdpSocketThreadRunning;
+        }
+        try {
+            @SuppressLint("DefaultLocale")
+            byte[] data = String.format("%d:%d:%d", MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, -y, x).getBytes();
+            Log.d(TAG, "sendMouseMoveRelativeCMD:  data " + new String(data));
+            TLVData tlvData = new TLVData(TLVData.PEER_CMD_MOUSE_CTL, data.length, data);
+            cmdList.add(tlvData);
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     public void sendMouseRigthClickCMD(int x, int y) {
         // 右键单击
+        if (cmdUdpSocketThreadStatus != cmdUdpSocketThreadRunning) {
+            cmdUdpSocketThread.start();
+            cmdUdpSocketThreadStatus = cmdUdpSocketThreadRunning;
+        }
+        try {
+            @SuppressLint("DefaultLocale")
+            byte[] data = String.format("%d:%d:%d", MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, -y, x).getBytes();
+            Log.d(TAG, "sendMouseMoveRelativeCMD:  data " + new String(data));
+            TLVData tlvData = new TLVData(TLVData.PEER_CMD_MOUSE_CTL, data.length, data);
+            cmdList.add(tlvData);
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
     }
-
 }

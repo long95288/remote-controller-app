@@ -42,6 +42,12 @@ public class H264StreamPlayActivity extends AppCompatActivity implements View.On
     private int lastCurX = 0;
     private int lastCurY = 0;
     private long lastCurTime = new Date().getTime();
+
+    private long startTouchTime = new Date().getTime();
+    private long finishTouchTime = new Date().getTime();
+    private boolean isMove = false;
+
+
     private H264Player h264Player;
     private final String filePath = Environment.getExternalStorageDirectory() + "/" + filename;
 
@@ -135,18 +141,23 @@ public class H264StreamPlayActivity extends AppCompatActivity implements View.On
                 Log.d(TAG, "onTouch: 起始位置：(" + event.getX() + "," + event.getY() +")");
                 lastCurX = (int) event.getX();
                 lastCurY = (int) event.getY();
+                lastCurTime = new Date().getTime();
+                startTouchTime = lastCurTime;
+                isMove = false;
                 break;
             /*
              * 触屏实时位置
              */
             case MotionEvent.ACTION_MOVE:
                 // 10 ms
-
                 Log.d(TAG, "onTouch: 实时位置：(" + event.getX() + "," + event.getY() +")");
-                int moveX = (lastCurX - (int)event.getX()) / 100;
-                int moveY= (lastCurY - (int)event.getY()) / 100;
+                int moveX = (lastCurX - (int)event.getX()) / 40;
+                int moveY= (lastCurY - (int)event.getY()) / 40;
                 long now = new Date().getTime();
-                if (now - lastCurTime > 30) {
+                if (moveX > 0 | moveY > 0) {
+                    isMove = true;
+                }
+                if (now - lastCurTime > 20) {
                     RCTLCore.getInstance().sendMouseMoveRelativeCMD(moveX, moveY);
                     lastCurTime = now;
                 }
@@ -158,6 +169,15 @@ public class H264StreamPlayActivity extends AppCompatActivity implements View.On
                 Log.d(TAG, "onTouch: 结束位置：(" + event.getX() + "," + event.getY() +")");
                 lastCurX = (int) event.getX();
                 lastCurY = (int) event.getY();
+                finishTouchTime = new Date().getTime();
+                if (finishTouchTime - startTouchTime < 100 && !isMove) {
+                    Log.d(TAG, "onTouch: click");
+                    RCTLCore.getInstance().sendMouseLeftClickCMD(0,0);
+                }
+                if (finishTouchTime - startTouchTime > 1000 && !isMove) {
+                    Log.d(TAG, "onTouch: long click");
+                    RCTLCore.getInstance().sendMouseRigthClickCMD(0,0);
+                }
                 break;
             default:
                 break;
